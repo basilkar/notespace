@@ -30,8 +30,3 @@ chromaticScale x = (x, x `steps` 1, x `steps` 2, x `steps` 3, x `steps` 4, x `st
 
 wholeToneScale :: Note -> (Note, Note, Note, Note, Note, Note)
 wholeToneScale x = (x, x `steps` 2, x `steps` 4, x `steps` 6, x `steps` 8, x `steps` 10)
-
-data Scale = [Note]
-
-mode :: Int -> Note -> Scale -> Scale
-mode m x s = (prod2list s)
