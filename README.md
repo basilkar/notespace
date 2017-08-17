@@ -2,7 +2,7 @@
 
 Next steps:
 
-(1) implement some string metric (possibly the Levenshtein one)  
+~~(1)~~ implement some string metric (possibly the Levenshtein one): haskell-prototyping.hs:levenshtein  
 (2) figure out how to set up the threepenny gui  
 (3) implement spaces such as the circle of fifths and the tonnetz  
 
