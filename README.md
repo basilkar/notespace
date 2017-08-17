@@ -8,7 +8,7 @@ Next steps:
 
 Features:
 
-(1) input a set of notes, output fitting scales  
+~~(1)~~ input a set of notes, output fitting scales: haskell-prototyping.hs:improScale  
 (2) input a scale, output its chords  
 (3) input a melody, output a harmonization (hard)  
 (4) input keys X, Y and an n, output n keys on a tonnetz/circle-of-fifths/... geodesic of X & Y  
