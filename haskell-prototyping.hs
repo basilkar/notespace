@@ -66,77 +66,77 @@ notelistBySignature r sig = [r `halfsteps` m | m <- sig]
 
 -- intervals
 
-interval1p :: Note -> [Note]
+interval1p :: Note -> [Note] -- unison
 interval1p r = notelistBySignature r [0,0]
 
-interval2m :: Note -> [Note]
+interval2m :: Note -> [Note] -- minor second
 interval2m r = notelistBySignature r [0,1]
 
-interval2M :: Note -> [Note]
+interval2M :: Note -> [Note] -- major second
 interval2M r = notelistBySignature r [0,2]
 
-interval3m :: Note -> [Note]
+interval3m :: Note -> [Note] -- minor third
 interval3m r = notelistBySignature r [0,3]
 
-interval3M :: Note -> [Note]
+interval3M :: Note -> [Note] -- major third
 interval3M r = notelistBySignature r [0,4]
 
-interval4p :: Note -> [Note]
+interval4p :: Note -> [Note] -- perfect fourth
 interval4p r = notelistBySignature r [0,5]
 
-interval4a :: Note -> [Note]
+interval4a :: Note -> [Note] -- augmented fourth
 interval4a r = notelistBySignature r [0,6]
 
-interval5p :: Note -> [Note]
+interval5p :: Note -> [Note] -- perfect fifth
 interval5p r = notelistBySignature r [0,7]
 
-interval6m :: Note -> [Note]
+interval6m :: Note -> [Note] -- minor sixth
 interval6m r = notelistBySignature r [0,8]
 
-interval6M :: Note -> [Note]
+interval6M :: Note -> [Note] -- major sixth
 interval6M r = notelistBySignature r [0,9]
 
-interval7m :: Note -> [Note]
+interval7m :: Note -> [Note] -- minor seventh
 interval7m r = notelistBySignature r [0,10]
 
-interval7M :: Note -> [Note]
+interval7M :: Note -> [Note] -- major seventh
 interval7M r = notelistBySignature r [0,11]
 
 -- triads
 
-triadM :: Note -> [Note]
+triadM :: Note -> [Note] -- major triad
 triadM r = notelistBySignature r [0,4,7]
 
-triadm :: Note -> [Note]
+triadm :: Note -> [Note] -- minor triad
 triadm r = notelistBySignature r [0,3,7]
 
-triada :: Note -> [Note]
+triada :: Note -> [Note] -- augmented triad
 triada r = notelistBySignature r [0,4,8]
 
-triadd :: Note -> [Note]
+triadd :: Note -> [Note] -- diminished triad
 triadd r = notelistBySignature r [0,3,6]
 
 -- scales
 
-scaleM :: Note -> [Note]
+scaleM :: Note -> [Note] -- major scale
 scaleM r = notelistBySignature r [0,2,4,5,7,9,11]
 
-scalemh :: Note -> [Note]
+scalemh :: Note -> [Note] -- harmonic minor scale
 scalemh r = notelistBySignature r [0,2,3,5,7,8,11]
 
-scalemm :: Note -> [Note]
+scalemm :: Note -> [Note] -- melodic minor scale
 scalemm r = notelistBySignature r [0,2,3,5,7,9,11]
 
-scalec :: Note -> [Note]
+scalec :: Note -> [Note] -- chromatic scale
 scalec r = notelistBySignature r [0..11]
 
-scalewt :: Note -> [Note]
+scalewt :: Note -> [Note] -- whole tone scale
 scalewt r = notelistBySignature r [0,2,4,6,8,10]
 
-scalepM :: Note -> [Note]
+scalepM :: Note -> [Note] -- pentatonic major scale
 scalepM r = notelistBySignature r [0,2,4,7,9]
 
-scalepm :: Note -> [Note]
+scalepm :: Note -> [Note] -- pentatonic minor scale
 scalepm r = notelistBySignature r [0,3,5,7,10]
 
 -- define the signature of a given note list as the list of the respective directed halfstep-distances
