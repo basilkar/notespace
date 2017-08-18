@@ -1,10 +1,11 @@
-{- STOLEN STUFF -}
+{--------------------------------}
+{- 0. PREAMBLE AND STOLEN STUFF -}
+{--------------------------------}
 
 import Data.List -- for sorting lists, for nub
--- import Text.EditDistance -- a package defining the Levenshtein metric; not readily useful, since its functions are not polymorphic
 import Data.Array -- for the memoization in the definition of Levenshtein metric
 
--- Define the Levenshtein metric as given on https://www.reddit.com/r/programming/comments/w4gs6/levenshtein_distance_in_haskell/c5a6jjz/ .
+-- Define the Levenshtein metric as given on https://www.reddit.com/r/programming/comments/w4gs6/levenshtein_distance_in_haskell/c5a6jjz/ . It is polymorphic, so readily applicable to our case, in contrast to the existing package Text.EditDistance.
 
 levenshtein :: (Eq a) => [a] -> [a] -> Int
 levenshtein xs ys = memoArray ! (n, m)
@@ -21,9 +22,7 @@ levenshtein xs ys = memoArray ! (n, m)
                                             memoArray ! (u-1, v),
                                             memoArray ! (u-1, v-1)]
 
-{- examples -}
-
-{-
+{- EXAMPLES
 
 > levenshtein "ABCFs" "AFsB"
 3
@@ -33,25 +32,25 @@ levenshtein xs ys = memoArray ! (n, m)
 
 -}
 
-{-
-Apart from the auxiliary preexisting datatypes, like Int and [a], the first base datatypes that come to mind regarding this project are an enumeration type for all twelve notes, and the positive reals (or maybe, the positive integers will do in practice, don't know) representing frequencies. Let's concentrate first on the notes.
--}
+{------------------------------------}
+{- 1. AN ENUMERATION TYPE FOR NOTES -}
+{------------------------------------}
 
-{-NOTES AND FUNCTIONS OVER THEM-}
+{-
+
+Apart from the auxiliary preexisting datatypes, like Int and [a], the first base datatypes that come to mind regarding this project are an enumeration type for all twelve notes, and the positive reals (or maybe, the positive integers will do in practice, don't know) representing frequencies. Let's concentrate first on the notes. Having notes, we can proceed to define intervals, triads, scales, as values of appropriate higher datatypes.
+
+-}
 
 data Note = A | As | B | C | Cs | D | Ds | E | F | Fs | G | Gs
     deriving (Eq, Enum, Ord, Show, Read, Bounded)
     
-{-
-Having notes, we can define intervals, certain triads, and more, as values of appropriate higher datatypes, for example, by functions outputing lists.
--}
-
--- an auxiliary function that gives the note m halfsteps above the note r (the "root")
+-- An auxiliary function that gives the note m halfsteps above the note r (the "root").
 
 halfsteps :: Note -> Int -> Note
 halfsteps r m = (toEnum (((fromEnum r) + m) `mod` 12))
 
--- auxiliary functions that gives the halfsteps distance between two notes; an absolute and a directed version
+-- Auxiliary functions that gives the halfsteps distance between two notes; an absolute and a directed version.
 
 halfstepsDistance :: Note -> Note -> Int
 halfstepsDistance r s = min (((fromEnum r) - (fromEnum s)) `mod` 12) (((fromEnum s) - (fromEnum r)) `mod` 12)
@@ -59,12 +58,12 @@ halfstepsDistance r s = min (((fromEnum r) - (fromEnum s)) `mod` 12) (((fromEnum
 halfstepsDirectedDistance :: Note -> Note -> Int
 halfstepsDirectedDistance r s = ((fromEnum s) - (fromEnum r)) `mod` 12
 
--- a signature is a list of integers representing intervals; given a root r and a signature sig define the list of notes that are each that many halfsteps apart from the root according to the signature -- note: this is meant to work for non-negative integers for the time being, the intended use being the generation of scales and chords, not of melody
+-- A signature is a list of integers representing intervals. given a root r and a signature sig define the list of notes that are each that many halfsteps apart from the root according to the signature. NB: this is meant to work for non-negative integers for the time being, the intended use being the generation of scales and chords, not of melody.
 
 notelistBySignature :: Note -> [Int] -> [Note]
 notelistBySignature r sig = [r `halfsteps` m | m <- sig]
 
--- intervals
+-- Hardcoding intervals
 
 interval1p :: Note -> [Note] -- unison
 interval1p r = notelistBySignature r [0,0]
@@ -116,7 +115,7 @@ triada r = notelistBySignature r [0,4,8]
 triadd :: Note -> [Note] -- diminished triad
 triadd r = notelistBySignature r [0,3,6]
 
--- scales
+-- and scales
 
 scaleM :: Note -> [Note] -- major scale
 scaleM r = notelistBySignature r [0,2,4,5,7,9,11]
@@ -139,12 +138,12 @@ scalepM r = notelistBySignature r [0,2,4,7,9]
 scalepm :: Note -> [Note] -- pentatonic minor scale
 scalepm r = notelistBySignature r [0,3,5,7,10]
 
--- define the signature of a given note list as the list of the respective directed halfstep-distances
+-- Define the signature of a given note list as the list of the respective directed halfstep-distances.
 
 signature :: [Note] -> [Int]
 signature ns = [halfstepsDirectedDistance (head ns) n | n <- ns]
 
---in order to get the modes of a given scale, or the inversions of a given chord, we first define the cyclic permutations of a (finite) list
+-- In order to get the modes of a given scale, or the inversions of a given chord, we first define the cyclic permutations of a (finite) list.
 
 cyclicPermutation :: Int -> [a] -> [a]
 cyclicPermutation m []     = []
@@ -152,7 +151,7 @@ cyclicPermutation m xs     = take l (drop m cxs)
     where cxs = cycle xs
           l = length xs
 
--- now, according to established terminology, the m-th mode of a scale sc with root r, should be the (m-1)-th cyclic permutation of the given scale at root r, while, if we're thinking about chords, the m-th inversion should be the m-th cyclic permutation of a given chord (the 0-th inversion is called "root position"); what the heck, we define both
+-- Now, according to established terminology, the m-th mode of a scale sc with root r, should be the (m-1)-th cyclic permutation of the given scale at root r, while, if we're thinking about chords, the m-th inversion should be the m-th cyclic permutation of a given chord (the 0-th inversion is called "root position"); what the heck, we define both.
           
 mode :: Int -> (Note -> [Note]) -> Note -> [Note]
 mode m sc r = cyclicPermutation (m-1) (sc r)
@@ -160,7 +159,7 @@ mode m sc r = cyclicPermutation (m-1) (sc r)
 inversion :: Int -> (Note -> [Note]) -> Note -> [Note]
 inversion m sc r = cyclicPermutation m (sc r)
 
--- we relativize the above to an arbitrary rerooting: rsc stands now for a scale rooted at r and s stands for the new root
+-- We relativize the above to an arbitrary rerooting: rsc stands now for a scale rooted at r and s stands for the new root.
 
 modeAtRoot :: Int -> (Note -> [Note]) -> Note -> Note -> [Note]
 modeAtRoot m rsc r s = notelistBySignature s (signature (mode m rsc r))
@@ -168,7 +167,13 @@ modeAtRoot m rsc r s = notelistBySignature s (signature (mode m rsc r))
 inversionAtRoot :: Int -> (Note -> [Note]) -> Note -> Note -> [Note]
 inversionAtRoot m rsc r s = notelistBySignature s (signature (inversion m rsc r))
 
-{- APPLICATION
+{------------------}
+{- 2. APPLICATION -}
+{------------------}
+
+{-
+
+Suggest scales fitting to a set of notes.
 
 INPUT a note list metric, a list of notes c and a list of lists of notes cs
 OUTPUT the (c:cs) sorted by the given metric
@@ -223,11 +228,18 @@ improTriad ns r = sortByMetric levenshtein alltriads ns
 > improTriad [C,G,E] A
 [[C,G,E],[A,Cs,E],[A,C,E],[A,C,F],[A,D,Fs],[A,Cs,Fs],[A,D,F],[A,C,Fs],[A,Ds,Fs],[A,C,Ds],[A,Cs,F]]
 
-Note that the Levenshtein distance needs adaptation to fit certain musical intuitions.
+Note that the Levenshtein distance needs adaptation to fit some musical intuitions.
+
+This is for the song "Etymology":
+
+> improScale (sort $ nub $ [E,G,D,C,Ds,G,A,C,E,G,Ds,G]) E
+[[A,C,D,Ds,E,G],[E,G,A,C,D],[E,Fs,Gs,B,Cs],[E,Fs,A,B,D],[E,Fs,A,B,Cs],[E,G,A,B,D],[E,Fs,Gs,As,C,D],[E,Fs,Gs,A,C,Cs,Ds],[E,Fs,Gs,A,B,Cs,Ds],[E,Fs,G,A,B,Cs,D],[E,F,G,A,B,C,D],[E,Fs,Gs,As,B,Cs,Ds],[E,Fs,Gs,A,B,Cs,D],[E,Fs,G,A,B,C,D],[E,F,G,A,As,C,D],[E,Fs,G,A,B,C,Ds],[E,F,G,A,As,Cs,D],[E,Fs,G,As,B,Cs,D],[E,F,Gs,A,B,C,D],[E,G,Gs,As,B,Cs,Ds],[E,F,G,Gs,As,C,Cs],[E,Fs,G,A,B,Cs,Ds],[E,F,G,A,B,Cs,D],[E,Fs,Gs,As,C,Cs,Ds],[E,Fs,Gs,As,B,Cs,D],[E,Fs,Gs,A,B,C,D],[E,Fs,G,A,As,C,D],[E,F,G,Gs,As,C,D],[E,F,Fs,G,Gs,A,As,B,C,Cs,D,Ds]]
 
 -}
 
-{-REPRESENTING CHORDS BY AN ALGEBRA-}
+{------------------------------------------------}
+{- 3. AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
+{------------------------------------------------}
 
 {-
 So, one way to speak about chords is to view them as values of [Note], exactly as we did above with the four basic types of triads.
@@ -242,7 +254,7 @@ Another way to capture all chords, which tracks their actual construction (as is
 data Chord = ChordBot | Single Note | Dyad Chord Chord | Triad Chord Chord Chord | Tetrad Chord Chord Chord Chord | Pentad Chord Chord Chord Chord Chord
     deriving (Eq, Ord, Show, Read)
 
-{- examples -}
+{- EXAMPLES -}
 
 e_minor_over_c = Dyad (Single C) (Triad (Single E) (Single G) (Single B))
 a_over_c_major = Dyad (Triad (Single C) (Single E) (Single G)) (Single A)
@@ -265,7 +277,7 @@ Single C :: Chord
 There is a bunch of functions to be defined on any inductive datatype. Note that the constructor "Single" takes values of "Note" as arguments, and it seems intuitive to view it as nullary in (some of?) the definitions that follow.
 -}
 
--- the size and the height of a token (i.e., a chord)
+-- The size and the height of a token (i.e., a chord).
 
 sizeOfChordToken :: Chord -> Int
 sizeOfChordToken ChordBot           = 0
@@ -283,7 +295,7 @@ heightOfChordToken (Triad c d e)        = 1 + maximum [heightOfChordToken c, hei
 heightOfChordToken (Tetrad c d e f)     = 1 + maximum [heightOfChordToken c, heightOfChordToken d, heightOfChordToken e, heightOfChordToken f]
 heightOfChordToken (Pentad c d e f g)   = 1 + maximum [heightOfChordToken c, heightOfChordToken d, heightOfChordToken e, heightOfChordToken f, heightOfChordToken g]
 
--- the size of the chord, that is, its number of notes
+-- The size of the chord, that is, its number of notes.
 
 sizeOfChord :: Chord -> Int
 sizeOfChord ChordBot            = 0
@@ -293,7 +305,7 @@ sizeOfChord (Triad c d e)       = (sizeOfChord c) + (sizeOfChord d) + (sizeOfCho
 sizeOfChord (Tetrad c d e f)    = (sizeOfChord c) + (sizeOfChord d) + (sizeOfChord e) + (sizeOfChord f)
 sizeOfChord (Pentad c d e f g)  = (sizeOfChord c) + (sizeOfChord d) + (sizeOfChord e) + (sizeOfChord f) + (sizeOfChord g)
 
--- the yield of a token, that is, its leaves, that is, its actual notes
+-- The yield of a token, that is, its leaves, that is, its actual notes.
 
 yieldOfChord :: Chord -> [Note]
 yieldOfChord ChordBot           = []
@@ -303,9 +315,7 @@ yieldOfChord (Triad c d e)      = (yieldOfChord c) ++ (yieldOfChord d) ++ (yield
 yieldOfChord (Tetrad c d e f)   = (yieldOfChord c) ++ (yieldOfChord d) ++ (yieldOfChord e) ++ (yieldOfChord f)
 yieldOfChord (Pentad c d e f g) = (yieldOfChord c) ++ (yieldOfChord d) ++ (yieldOfChord e) ++ (yieldOfChord f) ++ (yieldOfChord g)
 
-{- examples -}
-
-{-
+{- EXAMPLES
 
 > sizeOfChordToken e_minor_over_c
 6
@@ -336,10 +346,9 @@ The size of a chord is just the length of its yield.
 > (sizeOfChord (Triad (Single C) (Single E) (Single G))) == length (yieldOfChord (Triad (Single C) (Single E) (Single G)))
 True
 
-
 -}
 
--- define the head constructor C of a token C a1 ... ar as the token C * ... *
+-- Define the head constructor C of a token C a1 ... ar as the token C * ... *.
 
 headToken :: Chord -> Chord
 headToken ChordBot = ChordBot
@@ -349,55 +358,27 @@ headToken (Triad c d e) = Triad ChordBot ChordBot ChordBot
 headToken (Tetrad c d e f) = Tetrad ChordBot ChordBot ChordBot ChordBot
 headToken (Pentad c d e f g) = Pentad ChordBot ChordBot ChordBot ChordBot ChordBot
 
--- define the i-th component token of a given token
-
-componentToken :: Chord -> Int -> Maybe Chord
-componentToken ChordBot _   = Nothing
-componentToken (Single n) _ = Nothing
-componentToken (Dyad c d) m
-    | m < 1 || m > 2        = Nothing
-    | m == 1                = Just c
-    | m == 2                = Just d
-componentToken (Triad c d e) m
-    | m < 1 || m > 3        = Nothing
-    | m == 1                = Just c
-    | m == 2                = Just d
-    | m == 3                = Just e
-componentToken (Tetrad c d e f) m
-    | m < 1 || m > 4        = Nothing
-    | m == 1                = Just c
-    | m == 2                = Just d
-    | m == 3                = Just e
-    | m == 4                = Just f
-componentToken (Pentad c d e f g) m
-    | m < 1 || m > 5        = Nothing
-    | m == 1                = Just c
-    | m == 2                = Just d
-    | m == 3                = Just e
-    | m == 4                = Just f
-    | m == 5                = Just g
-
--- define the arity of a token; more general, and easier than declaring the arity of a constructor. In particular, what is here defined is the arity of the head constructor of a token
+-- Define the arity of a token; more general, and easier than declaring the arity of a constructor. In particular, what is here defined is the arity of the head constructor of a token.
 
 arity :: Chord -> Int
 arity ChordBot              = 0
-arity (Single n)            = 1 -- here Single is treated as a unary constructor!
+arity (Single n)            = 0 -- here Single is treated as a nullary constructor!
 arity (Dyad c d)            = 2
 arity (Triad c d e)         = 3
 arity (Tetrad c d e f)      = 4
 arity (Pentad c d e f g)    = 5
 
--- define the list of component tokens of a given token
+-- Define the list of component tokens of a given token.
 
-componentTokenList :: Chord -> [Chord]
-componentTokenList ChordBot             = []
-componentTokenList (Single n)           = []
-componentTokenList (Dyad c d)           = [c, d]
-componentTokenList (Triad c d e)        = [c, d, e]
-componentTokenList (Tetrad c d e f)     = [c, d, e, f]
-componentTokenList (Pentad c d e f g)   = [c, d, e, f, g]
+tokenComponents :: Chord -> [Chord]
+tokenComponents ChordBot             = []
+tokenComponents (Single n)           = []
+tokenComponents (Dyad c d)           = [c, d]
+tokenComponents (Triad c d e)        = [c, d, e]
+tokenComponents (Tetrad c d e f)     = [c, d, e, f]
+tokenComponents (Pentad c d e f g)   = [c, d, e, f, g]
 
--- define the list of all subtokens of a given token
+-- Define the list of all subtokens of a given token.
 
 subtokens :: Chord -> [Chord]
 subtokens ChordBot              = [ChordBot]
@@ -408,9 +389,7 @@ subtokens (Tetrad c d e f)      = [Tetrad c d e f] ++ (subtokens c) ++ (subtoken
 subtokens (Pentad c d e f g)    = [Pentad c d e f g] ++ (subtokens c) ++ (subtokens d) ++ (subtokens e) ++ (subtokens f) ++ (subtokens g)
 
 
-{- examples -}
-
-{-
+{- EXAMPLES
 
 > componentToken a_over_c_major 1
 Just (Triad (Single C) (Single E) (Single G))
@@ -421,10 +400,10 @@ Just (Single A)
 > componentToken a_over_c_major 3
 Nothing
 
-> componentTokenList a_over_c_major
+> tokenComponents a_over_c_major
 [Triad (Single C) (Single E) (Single G),Single A]
 
-> componentTokenList e_minor_over_c
+> tokenComponents e_minor_over_c
 [Single C,Triad (Single E) (Single G) (Single B)]
 
 > subtokens e_minor_over_c 
@@ -432,19 +411,24 @@ Nothing
 
 -}
 
+-- Define the usual consistency predicates.
+
 consistent :: Chord -> Chord -> Bool
 consistent c ChordBot   = True
 consistent ChordBot c   = True
-consistent c d          = (headToken c == headToken d) && (consistent_lift (componentTokenList c) (componentTokenList d))
+consistent c d          = (headToken c == headToken d) && (consistent_lift (tokenComponents c) (tokenComponents d))
 
 consistent_lift :: [Chord] -> [Chord] -> Bool
 consistent_lift [] []           = True
 consistent_lift (c:cs) (d:ds)   = (consistent c d) && (consistent_lift cs ds)
 consistent_lift _ _             = False
 
-{-examples-}
+consistentL :: [Chord] -> Bool
+consistentL []       = True
+consistentL [c]      = True
+consistentL (c:d:cs) = (consistent c d) && (consistentL (c:cs))
 
-{-
+{- EXAMPLES
 
 > c_major_extended `consistent` a_over_c_major
 True
@@ -452,24 +436,234 @@ True
 > c_major_extended `consistent` e_minor_over_c
 False
 
--}
-
-consistentList :: [Chord] -> Bool
-consistentList []       = True
-consistentList [c]      = True
-consistentList (c:d:cs) = (consistent c d) && (consistentList (c:cs))
-
-{-examples-}
-
-{-
-
-> consistentList [c_major_extended, a_over_c_major, e_minor_over_c]
+> consistentL [c_major_extended, a_over_c_major, e_minor_over_c]
 False
 
-> consistentList [c_major_extended, a_over_c_major]
+> consistentL [c_major_extended, a_over_c_major]
 True
 
-> consistentList [Single A, ChordBot, Single B]
+> consistentL [Single A, ChordBot, Single B]
 False
+
+-}
+
+-- Ana uxiliary function for the notion of sufficiency: a neighborhood U is sufficient for the constructor C of arity r on the arguments U1, ..., Ur, when for each i = 1, ..., r and each ai in Ui there exists an a in U with head constructor C and i-th component token ai.
+
+sufficient :: [Chord] -> Chord -> [[Chord]] -> Bool -- arg1: U, arg2: C, arg3: U1, 6..., Ur
+sufficient u ctr us
+    | not (consistentL u) = error "sufficient: inconsistent list"
+    | ctr /= (headToken ctr) = error "sufficient: not a constructor"
+    | (length us) /= r = error "sufficient: too few or too many arguments"
+    | otherwise = all (\ i -> all (\ b -> any (\ a -> headToken a == ctr && ((tokenComponents a) !! (i - 1)) == b) u) (us !!(i-1))) indices
+    where
+        r = arity ctr
+        indices = [1..r]
+        
+-- An auxiliary function for the constructor application.
+
+ctrapply :: Chord -> [[Chord]] -> [Chord]
+ctrapply ctr us
+    | ctr /= ctrhead                                                    = error "ctrapply: not a constructor"
+--     | any (\ u -> u == []) us                                           = error "ctrapply: empty argument" -- if you include this line the pathform below crashes; in any case, you would need the line in the definition of entails, if you were to use ctrapply there
+    | any (\ u -> not (consistentL u)) us                               = error "ctrapply: inconsistent argument"
+    | (length us) /= (arity ctr)                                        = error "ctrapply: too few or too many arguments"
+    | ctrhead == ChordBot                                               = [ChordBot]
+    | ctrhead == Single A                                               = [Single A]
+    | ctrhead == Single As                                              = [Single As]
+    | ctrhead == Single B                                               = [Single B]
+    | ctrhead == Single C                                               = [Single C]
+    | ctrhead == Single Cs                                              = [Single Cs]
+    | ctrhead == Single D                                               = [Single D]
+    | ctrhead == Single Ds                                              = [Single Ds]
+    | ctrhead == Single E                                               = [Single E]
+    | ctrhead == Single F                                               = [Single F]
+    | ctrhead == Single Fs                                              = [Single Fs]
+    | ctrhead == Single G                                               = [Single G]
+    | ctrhead == Single Gs                                              = [Single Gs]
+    | ctrhead == Dyad ChordBot ChordBot                                 = [Dyad a b | a <- (us !! 0), b <- (us !! 1)]
+    | ctrhead == Triad ChordBot ChordBot ChordBot                       = [Triad a b c | a <- (us !! 0), b <- (us !! 1), c <- (us !! 2)]
+    | ctrhead == Tetrad ChordBot ChordBot ChordBot ChordBot             = [Tetrad a b c d | a <- (us !! 0), b <- (us !! 1), c <- (us !! 2), d <- (us !! 3)]
+    | ctrhead == Pentad ChordBot ChordBot ChordBot ChordBot ChordBot    = [Pentad a b c d e | a <- (us !! 0), b <- (us !! 1), c <- (us !! 2), d <- (us !! 3), e <- (us !! 4)]
+    where
+        ctrhead = headToken ctr
+
+-- The following strips a neighborhood of its bottom tokens.
+
+stripBot :: [Chord] -> [Chord]
+stripBot u = filter (\ a -> a /= ChordBot) u
+
+-- Define the predicate of entailment; interesting that it works without ctrapply or stripBot -- this needs testing.
+        
+entails :: [Chord] -> Chord -> Bool
+entails u a
+    | not (consistentL u)    = error "inconsistent list"
+    | otherwise                 = case a of
+                                        ChordBot         -> True
+                                        Single n         -> sufficient u (headToken a) [[Single n]]
+                                        Dyad b c         -> sufficient u (headToken a) [[b], [c]]
+                                        Triad b c d      -> sufficient u (headToken a) [[b], [c], [d]]
+                                        Tetrad b c d e   -> sufficient u (headToken a) [[b], [c], [d], [e]]
+                                        Pentad b c d e f -> sufficient u (headToken a) [[b], [c], [d], [e], [f]]
+
+-- Finally, define the lift of entails between lists.
+
+entailsL :: [Chord] -> [Chord] -> Bool
+entailsL u v = all (\ b -> u `entails` b) v
+
+{- EXAMPLES
+
+> entails [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] (Dyad ChordBot ChordBot)
+True
+
+> entails [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] (Dyad e_minor_over_c ChordBot)
+True
+
+> entails [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] (Dyad e_minor_over_c (Dyad (Triad (Single C) (Single E) (Single G)) (Single A)))
+True
+
+> entails [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] (Dyad e_minor_over_c (Dyad (Triad (Single C) (Single E) (Single G)) ChordBot))
+True
+
+> entails [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] (Dyad e_minor_over_c (Dyad (Triad (Single C) (Single E) (Single G)) (Single B)))
+False
+
+> [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] `entails` (Dyad e_minor_over_c (Dyad (Triad (Single C) (Single E) (Single G)) (Single B)))
+False
+
+> [ChordBot, Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] `entails` (Dyad e_minor_over_c ChordBot)
+True
+
+> [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] `entails` (Triad e_minor_over_c ChordBot ChordBot)
+False
+
+> [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] `entailsL` [ChordBot,Triad e_minor_over_c ChordBot ChordBot]
+False
+
+> [Dyad ChordBot c_major_extended, Dyad ChordBot a_over_c_major, Dyad e_minor_over_c ChordBot] `entailsL` [ChordBot,Dyad e_minor_over_c ChordBot]
+True
+
+-}
+
+-- Now to some normal forms of neighborhoods. The eigentoken (or supremum) of a neighborhood is defined with the help of an auxiliary function computing suprema of two tokens.
+
+sup :: Chord -> Chord -> Chord
+sup ChordBot a = a
+sup a ChordBot = a
+sup (Single A) (Single A) = (Single A)
+sup (Single As) (Single As) = (Single As)
+sup (Single B) (Single B) = (Single B)
+sup (Single C) (Single C) = (Single C)
+sup (Single Cs) (Single Cs) = (Single Cs)
+sup (Single D) (Single D) = (Single D)
+sup (Single Ds) (Single Ds) = (Single Ds)
+sup (Single E) (Single E) = (Single E)
+sup (Single F) (Single F) = (Single F)
+sup (Single Fs) (Single Fs) = (Single Fs)
+sup (Single G) (Single G) = (Single G)
+sup (Single Gs) (Single Gs) = (Single Gs)
+sup (Dyad a b) (Dyad a' b') = Dyad (sup a a') (sup b b')
+sup (Triad a b c) (Triad a' b' c') = Triad (sup a a') (sup b b') (sup c c')
+sup (Tetrad a b c d) (Tetrad a' b' c' d') = Tetrad (sup a a') (sup b b') (sup c c') (sup d d')
+sup (Pentad a b c d e) (Pentad a' b' c' d' e') = Pentad (sup a a') (sup b b') (sup c c') (sup d d') (sup e e')
+sup _ _ = error "sup: inconsistent tokens"
+
+supL :: [Chord] -> Chord
+supL [] = ChordBot
+supL [a] = a
+supL (a:as) = sup a (supL as)
+
+-- The path form of a neighborhood is defined with the help of an auxiliary function computing the path form of a token.
+
+paths :: Chord -> [Chord]
+paths ChordBot            = [ChordBot]
+paths (Single A)          = [Single A]
+paths (Single As)         = [Single As]
+paths (Single B)          = [Single B]
+paths (Single C)          = [Single C]
+paths (Single Cs)         = [Single Cs]
+paths (Single D)          = [Single D]
+paths (Single Ds)         = [Single Ds]
+paths (Single E)          = [Single E]
+paths (Single F)          = [Single F]
+paths (Single Fs)         = [Single Fs]
+paths (Single G)          = [Single G]
+paths (Single Gs)         = [Single Gs]
+paths (Dyad a b)          = nub $ (ctrapply (Dyad ChordBot ChordBot) [stripBot $ paths a, [ChordBot]]) ++ (ctrapply (Dyad ChordBot ChordBot) [[ChordBot], stripBot $ paths b])
+paths (Triad a b c)       = nub $ (ctrapply (Triad ChordBot ChordBot ChordBot) [stripBot $ paths a, [ChordBot], [ChordBot]]) ++ (ctrapply (Triad ChordBot ChordBot ChordBot) [[ChordBot], stripBot $ paths b, [ChordBot]]) ++ (ctrapply (Triad ChordBot ChordBot ChordBot)  [[ChordBot], [ChordBot], stripBot $ paths c])
+paths (Tetrad a b c d)    = nub $ (ctrapply (Tetrad ChordBot ChordBot ChordBot ChordBot) [stripBot $ paths a, [ChordBot], [ChordBot], [ChordBot]]) ++ (ctrapply (Tetrad ChordBot ChordBot ChordBot ChordBot) [[ChordBot], stripBot $ paths b, [ChordBot], [ChordBot]]) ++ (ctrapply (Tetrad ChordBot ChordBot ChordBot ChordBot)  [[ChordBot], [ChordBot], stripBot $ paths c, [ChordBot]]) ++ (ctrapply (Tetrad ChordBot ChordBot ChordBot ChordBot) [[ChordBot], [ChordBot], [ChordBot], stripBot $ paths d])
+paths (Pentad a b c d e)  = nub $ (ctrapply (Pentad ChordBot ChordBot ChordBot ChordBot ChordBot) [stripBot $ paths a, [ChordBot], [ChordBot], [ChordBot], [ChordBot]]) ++ (ctrapply (Pentad ChordBot ChordBot ChordBot ChordBot ChordBot) [[ChordBot], stripBot $ paths b, [ChordBot], [ChordBot], [ChordBot]]) ++ (ctrapply (Pentad ChordBot ChordBot ChordBot ChordBot ChordBot)  [[ChordBot], [ChordBot], stripBot $ paths c, [ChordBot], [ChordBot]]) ++ (ctrapply (Pentad ChordBot ChordBot ChordBot ChordBot ChordBot) [[ChordBot], [ChordBot], [ChordBot], stripBot $ paths d, [ChordBot]]) ++ (ctrapply (Pentad ChordBot ChordBot ChordBot ChordBot ChordBot) [[ChordBot], [ChordBot], [ChordBot], [ChordBot], stripBot $ paths e])
+
+pathsL :: [Chord] -> [Chord]
+pathsL u = paths (supL u)
+
+{- EXAMPLES
+
+> sup (Dyad (Single Cs) (ChordBot)) (Dyad (ChordBot) (Single D))
+Dyad (Single Cs) (Single D)
+
+> sup (Dyad (Single Cs) (ChordBot)) (Single D)
+*** Exception: sup: inconsistent tokens
+
+> supL [Triad (Single C) ChordBot ChordBot, Triad ChordBot (Single E) ChordBot, Triad ChordBot ChordBot (Single G), ChordBot, Triad (Single C) (Single E) ChordBot]
+Triad (Single C) (Single E) (Single G)
+
+> supL []
+ChordBot
+
+> supL [Triad (Single C) ChordBot ChordBot, Triad ChordBot (Single E) ChordBot, Triad ChordBot ChordBot (Single G), ChordBot, Triad (Single F) ChordBot ChordBot]
+Triad *** Exception: sup: inconsistent tokens
+
+> paths ChordBot
+[ChordBot]
+
+> paths (Single A)
+[Single A]
+
+> paths (Dyad ChordBot (Single A))
+[Dyad ChordBot (Single A)]
+
+> paths (Pentad (Single E) (Single G) (Single B) (Single D) (Pentad (Single E) (Single G) (Single B) (Single D) ChordBot))
+[Pentad (Single E) ChordBot ChordBot ChordBot ChordBot,Pentad ChordBot (Single G) ChordBot ChordBot ChordBot,Pentad ChordBot ChordBot (Single B) ChordBot ChordBot,Pentad ChordBot ChordBot ChordBot (Single D) ChordBot,Pentad ChordBot ChordBot ChordBot ChordBot (Pentad (Single E) ChordBot ChordBot ChordBot ChordBot),Pentad ChordBot ChordBot ChordBot ChordBot (Pentad ChordBot (Single G) ChordBot ChordBot ChordBot),Pentad ChordBot ChordBot ChordBot ChordBot (Pentad ChordBot ChordBot (Single B) ChordBot ChordBot),Pentad ChordBot ChordBot ChordBot ChordBot (Pentad ChordBot ChordBot ChordBot (Single D) ChordBot)]
+
+> paths (Dyad (Triad (Single E) (Single G) (Single B)) (Pentad (Single E) (Single G) (Single B) (Single D) ChordBot))
+[Dyad (Triad (Single E) ChordBot ChordBot) ChordBot,Dyad (Triad ChordBot (Single G) ChordBot) ChordBot,Dyad (Triad ChordBot ChordBot (Single B)) ChordBot,Dyad ChordBot (Pentad (Single E) ChordBot ChordBot ChordBot ChordBot),Dyad ChordBot (Pentad ChordBot (Single G) ChordBot ChordBot ChordBot),Dyad ChordBot (Pentad ChordBot ChordBot (Single B) ChordBot ChordBot),Dyad ChordBot (Pentad ChordBot ChordBot ChordBot (Single D) ChordBot)]
+
+-}
+
+-- it's high time we had some pretty-printing...
+
+ppn :: Note -> String
+ppn n = show n
+
+ppnL :: [Note] -> [String]
+ppnL ns = map ppn ns
+
+ppc :: Chord -> String
+ppc ChordBot           = "*"
+ppc (Single n)         = ppn n
+ppc (Dyad c d)         = "(2" ++ (ppc c) ++ (ppc d) ++ ")"
+ppc (Triad c d e)      = "(3" ++ (ppc c) ++ (ppc d) ++ (ppc e) ++ ")"
+ppc (Tetrad c d e f)   = "(4" ++ (ppc c) ++ (ppc d) ++ (ppc e) ++ (ppc f) ++ ")"
+ppc (Pentad c d e f g) = "(5" ++ (ppc c) ++ (ppc d) ++ (ppc e) ++ (ppc f) ++ (ppc g) ++ ")"
+
+ppcL :: [Chord] -> [String]
+ppcL as = map ppc as
+
+{- EXAMPLES
+
+> ppcL $ paths ChordBot
+["*"]
+
+> ppcL $ paths (Single A)
+["A"]
+
+> ppcL $ paths (Dyad ChordBot (Single A))
+["(2*A)"]
+
+> ppcL $ paths (Pentad (Single E) (Single G) (Single B) (Single D) (Pentad (Single E) (Single G) (Single B) (Single D) ChordBot))
+["(5E****)","(5*G***)","(5**B**)","(5***D*)","(5****(5E****))","(5****(5*G***))","(5****(5**B**))","(5****(5***D*))"]
+
+> ppcL $ paths (Dyad (Triad (Single E) (Single G) (Single B)) (Pentad (Single E) (Single G) (Single B) (Single D) ChordBot))
+["(2(3E**)*)","(2(3*G*)*)","(2(3**B)*)","(2*(5E****))","(2*(5*G***))","(2*(5**B**))","(2*(5***D*))"]
 
 -}
