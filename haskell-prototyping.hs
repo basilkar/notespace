@@ -1,6 +1,6 @@
-{--------------------------------}
-{- 0. PREAMBLE AND STOLEN STUFF -}
-{--------------------------------}
+{----------------------------------}
+{- 0 -- PREAMBLE AND STOLEN STUFF -}
+{----------------------------------}
 
 import Data.List -- for sorting lists, for nub
 import Data.Array -- for the memoization in the definition of Levenshtein metric
@@ -32,9 +32,9 @@ levenshtein xs ys = memoArray ! (n, m)
 
 -}
 
-{------------------------------------}
-{- 1. AN ENUMERATION TYPE FOR NOTES -}
-{------------------------------------}
+{--------------------------------------}
+{- 1 -- AN ENUMERATION TYPE FOR NOTES -}
+{--------------------------------------}
 
 {-
 
@@ -60,88 +60,161 @@ halfstepsDirectedDistance r s = ((fromEnum s) - (fromEnum r)) `mod` 12
 
 -- A signature is a list of integers representing intervals. given a root r and a signature sig define the list of notes that are each that many halfsteps apart from the root according to the signature. NB: this is meant to work for non-negative integers for the time being, the intended use being the generation of scales and chords, not of melody.
 
-notelistBySignature :: Note -> [Int] -> [Note]
-notelistBySignature r sig = [r `halfsteps` m | m <- sig]
+type Sig = [Int]
+
+notesBySignature :: Note -> [Int] -> [Note]
+notesBySignature r sig = [r `halfsteps` m | m <- sig]
+
+-- Hardcoding signatures
+
+sigInterval1p :: [Int] -- unison interval signature
+sigInterval1p = [0,0]
+
+sigInterval2m :: [Int] -- minor second interval signature
+sigInterval2m = [0,1]
+
+sigInterval2M :: [Int] -- major second interval signature
+sigInterval2M = [0,2]
+
+sigInterval3m :: [Int] -- minor third interval signature
+sigInterval3m = [0,3]
+
+sigInterval3M :: [Int] -- major third interval signature
+sigInterval3M = [0,4]
+
+sigInterval4p :: [Int] -- perfect fourth interval signature
+sigInterval4p = [0,5]
+
+sigInterval4a :: [Int] -- augmented fourth interval signature
+sigInterval4a = [0,6]
+
+sigInterval5p :: [Int] -- perfect fifth interval signature
+sigInterval5p = [0,7]
+
+sigInterval6m :: [Int] -- minor sixth interval signature
+sigInterval6m = [0,8]
+
+sigInterval6M :: [Int] -- major sixth interval signature
+sigInterval6M = [0,9]
+
+sigInterval7m :: [Int] -- minor seventh interval signature
+sigInterval7m = [0,10]
+
+sigInterval7M :: [Int] -- major seventh interval signature
+sigInterval7M = [0,11]
+
+sigTriadM :: [Int] -- major triad signature
+sigTriadM = [0,4,7]
+
+sigTriadm :: [Int] -- minor triad signature
+sigTriadm = [0,3,7]
+
+sigTriada :: [Int] -- augmented triad signature
+sigTriada = [0,4,8]
+
+sigTriadd :: [Int] -- diminished triad signature
+sigTriadd = [0,3,6]
+
+sigScaleM :: [Int] -- major scale signature
+sigScaleM = [0,2,4,5,7,9,11]
+
+sigScalemh :: [Int] -- harmonic minor scale signature
+sigScalemh = [0,2,3,5,7,8,11]
+
+sigScalemm :: [Int] -- melodic minor scale signature
+sigScalemm = [0,2,3,5,7,9,11]
+
+sigScalec :: [Int] -- chromatic scale signature
+sigScalec = [0..11]
+
+sigScalewt :: [Int] -- whole tone scale signature
+sigScalewt = [0,2,4,6,8,10]
+
+sigScalepM :: [Int] -- pentatonic major scale signature
+sigScalepM = [0,2,4,7,9]
+
+sigScalepm :: [Int] -- pentatonic minor scale signature
+sigScalepm = [0,3,5,7,10]
 
 -- Hardcoding intervals
 
 interval1p :: Note -> [Note] -- unison
-interval1p r = notelistBySignature r [0,0]
+interval1p r = notesBySignature r [0,0]
 
 interval2m :: Note -> [Note] -- minor second
-interval2m r = notelistBySignature r [0,1]
+interval2m r = notesBySignature r [0,1]
 
 interval2M :: Note -> [Note] -- major second
-interval2M r = notelistBySignature r [0,2]
+interval2M r = notesBySignature r [0,2]
 
 interval3m :: Note -> [Note] -- minor third
-interval3m r = notelistBySignature r [0,3]
+interval3m r = notesBySignature r [0,3]
 
 interval3M :: Note -> [Note] -- major third
-interval3M r = notelistBySignature r [0,4]
+interval3M r = notesBySignature r [0,4]
 
 interval4p :: Note -> [Note] -- perfect fourth
-interval4p r = notelistBySignature r [0,5]
+interval4p r = notesBySignature r [0,5]
 
 interval4a :: Note -> [Note] -- augmented fourth
-interval4a r = notelistBySignature r [0,6]
+interval4a r = notesBySignature r [0,6]
 
 interval5p :: Note -> [Note] -- perfect fifth
-interval5p r = notelistBySignature r [0,7]
+interval5p r = notesBySignature r [0,7]
 
 interval6m :: Note -> [Note] -- minor sixth
-interval6m r = notelistBySignature r [0,8]
+interval6m r = notesBySignature r [0,8]
 
 interval6M :: Note -> [Note] -- major sixth
-interval6M r = notelistBySignature r [0,9]
+interval6M r = notesBySignature r [0,9]
 
 interval7m :: Note -> [Note] -- minor seventh
-interval7m r = notelistBySignature r [0,10]
+interval7m r = notesBySignature r [0,10]
 
 interval7M :: Note -> [Note] -- major seventh
-interval7M r = notelistBySignature r [0,11]
+interval7M r = notesBySignature r [0,11]
 
 -- triads
 
 triadM :: Note -> [Note] -- major triad
-triadM r = notelistBySignature r [0,4,7]
+triadM r = notesBySignature r [0,4,7]
 
 triadm :: Note -> [Note] -- minor triad
-triadm r = notelistBySignature r [0,3,7]
+triadm r = notesBySignature r [0,3,7]
 
 triada :: Note -> [Note] -- augmented triad
-triada r = notelistBySignature r [0,4,8]
+triada r = notesBySignature r [0,4,8]
 
 triadd :: Note -> [Note] -- diminished triad
-triadd r = notelistBySignature r [0,3,6]
+triadd r = notesBySignature r [0,3,6]
 
 -- and scales
 
 scaleM :: Note -> [Note] -- major scale
-scaleM r = notelistBySignature r [0,2,4,5,7,9,11]
+scaleM r = notesBySignature r [0,2,4,5,7,9,11]
 
 scalemh :: Note -> [Note] -- harmonic minor scale
-scalemh r = notelistBySignature r [0,2,3,5,7,8,11]
+scalemh r = notesBySignature r [0,2,3,5,7,8,11]
 
 scalemm :: Note -> [Note] -- melodic minor scale
-scalemm r = notelistBySignature r [0,2,3,5,7,9,11]
+scalemm r = notesBySignature r [0,2,3,5,7,9,11]
 
 scalec :: Note -> [Note] -- chromatic scale
-scalec r = notelistBySignature r [0..11]
+scalec r = notesBySignature r [0..11]
 
 scalewt :: Note -> [Note] -- whole tone scale
-scalewt r = notelistBySignature r [0,2,4,6,8,10]
+scalewt r = notesBySignature r [0,2,4,6,8,10]
 
 scalepM :: Note -> [Note] -- pentatonic major scale
-scalepM r = notelistBySignature r [0,2,4,7,9]
+scalepM r = notesBySignature r [0,2,4,7,9]
 
 scalepm :: Note -> [Note] -- pentatonic minor scale
-scalepm r = notelistBySignature r [0,3,5,7,10]
+scalepm r = notesBySignature r [0,3,5,7,10]
 
--- Define the signature of a given note list as the list of the respective directed halfstep-distances.
+-- Define the signature of a given note-list as the list of the respective directed halfstep-distances.
 
-signature :: [Note] -> [Int]
-signature ns = [halfstepsDirectedDistance (head ns) n | n <- ns]
+signatureByNotes :: [Note] -> [Int]
+signatureByNotes ns = [halfstepsDirectedDistance (head ns) n | n <- ns]
 
 -- In order to get the modes of a given scale, or the inversions of a given chord, we first define the cyclic permutations of a (finite) list.
 
@@ -162,14 +235,14 @@ inversion m sc r = cyclicPermutation m (sc r)
 -- We relativize the above to an arbitrary rerooting: rsc stands now for a scale rooted at r and s stands for the new root.
 
 modeAtRoot :: Int -> (Note -> [Note]) -> Note -> Note -> [Note]
-modeAtRoot m rsc r s = notelistBySignature s (signature (mode m rsc r))
+modeAtRoot m rsc r s = notesBySignature s (signatureByNotes (mode m rsc r))
 
 inversionAtRoot :: Int -> (Note -> [Note]) -> Note -> Note -> [Note]
-inversionAtRoot m rsc r s = notelistBySignature s (signature (inversion m rsc r))
+inversionAtRoot m rsc r s = notesBySignature s (signatureByNotes (inversion m rsc r))
 
-{------------------}
-{- 2. APPLICATION -}
-{------------------}
+{-----------------------------------------}
+{- 1.1 -- APPLICATION: SCALES FROM NOTES -}
+{-----------------------------------------}
 
 {-
 
@@ -191,9 +264,7 @@ improTriad :: [Note] -> Note -> [[Note]]
 improTriad ns r = sortByMetric levenshtein alltriads ns
     where alltriads = nub $ [inversionAtRoot m triadM r r | m <- [1..3]] ++ [inversionAtRoot m triadm r r | m <- [1..3]] ++ [inversionAtRoot m triadd r r | m <- [1..3]] ++ [inversionAtRoot m triada r r | m <- [1..3]]
 
-{- examples -}
-
-{-
+{- EXAMPLES
 
 > levenshtein (mode 6 scaleM C) (scalemh A)
 1
@@ -237,9 +308,81 @@ This is for the song "Etymology":
 
 -}
 
-{------------------------------------------------}
-{- 3. AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
-{------------------------------------------------}
+{------------------------------------}
+{- 1.2 -- APPLICATION: SCALE CHORDS -}
+{------------------------------------}
+
+{-
+
+Produce the chords of a given scale, according to a given signature.
+
+INPUT a scale and a signature
+OUTPUT a list of lists of notes from the given scale that fit the given signature
+
+-}
+
+scalechords :: [Note] -> [Int] -> [[Note]]
+scalechords [] _ = []
+scalechords _ [] = []
+scalechords sc sig = [ notesBySignature (sc !! 0) c | c <- memoArray, all (\ n -> elem n scsig) c]
+    where
+        scsig = signatureByNotes sc
+        memoArray = map (\ m -> (map (\ n -> (n + m) `mod` 12) sig)) scsig
+
+{- EXAMPLES -}
+
+c_major_scale = scaleM C -- alternatively, c_major_scale = notesBySignature C sigScaleM
+
+{-
+
+The following find all major, minor, augmented, and diminished triads to be found in the key of C major.
+
+> scalechords c_major_scale sigTriadM
+[[C,E,G],[F,A,C],[G,B,D]]
+
+> scalechords c_major_scale sigTriadm
+[[D,F,A],[E,G,B],[A,C,E]]
+
+> scalechords c_major_scale sigTriada
+[]
+
+> scalechords c_major_scale sigTriadd
+[[B,D,F]]
+
+We can find all triads to be found in the key of C major
+
+> map (\ sigs -> scalechords c_major_scale sigs) [sigTriadM, sigTriadm, sigTriada, sigTriadd]
+[[[C,E,G],[F,A,C],[G,B,D]],[[D,F,A],[E,G,B],[A,C,E]],[],[[B,D,F]]]
+
+or in the scale of E minor pentatonic
+
+> map (\ sigs -> scalechords (notesBySignature E sigScalepm) sigs) [sigTriadM, sigTriadm, sigTriada, sigTriadd]
+[[[G,B,D]],[[E,G,B]],[],[]]
+
+Similarly, we can use the function scalechords to find all perfect fourth intervals, say, of A minor pentatonic.
+
+> map (\ sigs -> scalechords (notesBySignature E sigScalepm) sigs) [ sigInterval4p ]
+[[[E,A],[A,D],[B,E],[D,G]]]
+
+and, to contrast, all perfect fourth intervals of C major:
+
+> map (\ sigs -> scalechords c_major_scale sigs) [ sigInterval4p ]
+[[[C,F],[D,G],[E,A],[G,C],[A,D],[B,E]]]
+
+Finally, all tritones in A melodic minor.
+
+> map (\ sigs -> scalechords (notesBySignature A sigScalemm) sigs) [ sigInterval4a ]
+[[[C,Fs],[D,Gs],[Fs,C],[Gs,D]]]
+
+Also, we can find existing instances of a scale or mode within a given scale. For example, this is how we find which notes of E major key constitute its locrian mode (the seventh mode of a major scale).
+
+> scalechords (scaleM E) (signatureByNotes [B, C, D, E, F, G, A])
+
+-}
+
+{--------------------------------------------------}
+{- 2 -- AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
+{--------------------------------------------------}
 
 {-
 So, one way to speak about chords is to view them as values of [Note], exactly as we did above with the four basic types of triads.
@@ -281,7 +424,7 @@ There is a bunch of functions to be defined on any inductive datatype. Note that
 
 sizeOfChordToken :: Chord -> Int
 sizeOfChordToken ChordBot           = 0
-sizeOfChordToken (Single n)         = 1
+sizeOfChordToken (Single _)         = 1
 sizeOfChordToken (Dyad c d)         = 1 + (sizeOfChordToken c) + (sizeOfChordToken d)
 sizeOfChordToken (Triad c d e)      = 1 + (sizeOfChordToken c) + (sizeOfChordToken d) + (sizeOfChordToken e)
 sizeOfChordToken (Tetrad c d e f)   = 1 + (sizeOfChordToken c) + (sizeOfChordToken d) + (sizeOfChordToken e) + (sizeOfChordToken f)
@@ -289,7 +432,7 @@ sizeOfChordToken (Pentad c d e f g) = 1 + (sizeOfChordToken c) + (sizeOfChordTok
 
 heightOfChordToken :: Chord -> Int
 heightOfChordToken ChordBot             = 0
-heightOfChordToken (Single n)           = 1
+heightOfChordToken (Single _)           = 1
 heightOfChordToken (Dyad c d)           = 1 + maximum [heightOfChordToken c, heightOfChordToken d]
 heightOfChordToken (Triad c d e)        = 1 + maximum [heightOfChordToken c, heightOfChordToken d, heightOfChordToken e]
 heightOfChordToken (Tetrad c d e f)     = 1 + maximum [heightOfChordToken c, heightOfChordToken d, heightOfChordToken e, heightOfChordToken f]
@@ -299,7 +442,7 @@ heightOfChordToken (Pentad c d e f g)   = 1 + maximum [heightOfChordToken c, hei
 
 sizeOfChord :: Chord -> Int
 sizeOfChord ChordBot            = 0
-sizeOfChord (Single n)          = 1
+sizeOfChord (Single _)          = 1
 sizeOfChord (Dyad c d)          = (sizeOfChord c) + (sizeOfChord d)
 sizeOfChord (Triad c d e)       = (sizeOfChord c) + (sizeOfChord d) + (sizeOfChord e)
 sizeOfChord (Tetrad c d e f)    = (sizeOfChord c) + (sizeOfChord d) + (sizeOfChord e) + (sizeOfChord f)
@@ -362,17 +505,17 @@ headToken (Pentad c d e f g) = Pentad ChordBot ChordBot ChordBot ChordBot ChordB
 
 arity :: Chord -> Int
 arity ChordBot              = 0
-arity (Single n)            = 0 -- here Single is treated as a nullary constructor!
-arity (Dyad c d)            = 2
-arity (Triad c d e)         = 3
-arity (Tetrad c d e f)      = 4
-arity (Pentad c d e f g)    = 5
+arity (Single _)            = 0 -- here Single is treated as a nullary constructor!
+arity (Dyad _ _)            = 2
+arity (Triad _ _ _)         = 3
+arity (Tetrad _ _ _ _)      = 4
+arity (Pentad _ _ _ _ _)    = 5
 
 -- Define the list of component tokens of a given token.
 
 tokenComponents :: Chord -> [Chord]
 tokenComponents ChordBot             = []
-tokenComponents (Single n)           = []
+tokenComponents (Single _)           = []
 tokenComponents (Dyad c d)           = [c, d]
 tokenComponents (Triad c d e)        = [c, d, e]
 tokenComponents (Tetrad c d e f)     = [c, d, e, f]
@@ -414,8 +557,8 @@ Nothing
 -- Define the usual consistency predicates.
 
 consistent :: Chord -> Chord -> Bool
-consistent c ChordBot   = True
-consistent ChordBot c   = True
+consistent _ ChordBot   = True
+consistent ChordBot _   = True
 consistent c d          = (headToken c == headToken d) && (consistent_lift (tokenComponents c) (tokenComponents d))
 
 consistent_lift :: [Chord] -> [Chord] -> Bool
@@ -425,7 +568,7 @@ consistent_lift _ _             = False
 
 consistentL :: [Chord] -> Bool
 consistentL []       = True
-consistentL [c]      = True
+consistentL [_]      = True
 consistentL (c:d:cs) = (consistent c d) && (consistentL (c:cs))
 
 {- EXAMPLES
@@ -447,7 +590,7 @@ False
 
 -}
 
--- Ana uxiliary function for the notion of sufficiency: a neighborhood U is sufficient for the constructor C of arity r on the arguments U1, ..., Ur, when for each i = 1, ..., r and each ai in Ui there exists an a in U with head constructor C and i-th component token ai.
+-- An auxiliary function for the notion of sufficiency: a neighborhood U is sufficient for the constructor C of arity r on the arguments U1, ..., Ur, when for each i = 1, ..., r and each ai in Ui there exists an a in U with head constructor C and i-th component token ai.
 
 sufficient :: [Chord] -> Chord -> [[Chord]] -> Bool -- arg1: U, arg2: C, arg3: U1, 6..., Ur
 sufficient u ctr us
