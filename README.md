@@ -14,3 +14,4 @@ Features:
 (3) input a melody, output a harmonization (hard)  
 (4) input keys X, Y and an n, output n keys on a tonnetz/circle-of-fifths/... geodesic of X & Y  
 (5) input a chord progression, output its negative (in the sense of Ernst Levy)  
+~~(6)~~ recognize known chords and scales: haskell-prototyping.hs: icsRecognizer  
