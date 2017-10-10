@@ -470,7 +470,8 @@ OUTPUT a list of lists of notes from the given scale that fit the given signatur
 
 ictRecognizer :: [Note] -> Note -> String
 ictRecognizer ns n 
-    | sig == sigInterval1p = "DYAD: " ++ (show n) ++ " unison"
+    | length ns == 0 = "not a pattern"
+    | length sig == 1 = "DYAD: " ++ (show n) ++ " unison"
     | sig == sigInterval2m = "DYAD: " ++ (show n) ++ " minor second"
     | sig == sigInterval2M = "DYAD: " ++ (show n) ++ " major second"
     | sig == sigInterval3m = "DYAD: " ++ (show n) ++ " minor third"
@@ -531,6 +532,23 @@ ictRecognizer ns n
     | otherwise = "unknown pattern"
     where
         sig = sort $ signatureByNotes $ nub $ n : ns
+        
+{- EXAMPLES -}
+
+{-
+
+> ictRecognizer [A, B, C, D, E, F, G] A
+"SCALE: A natural minor, aka aeolian; the sixth mode of C major"
+
+> ictRecognizer [D, Cs, B, As, Gs, Fs] E
+"SCALE: E acoustic, aka overtone, aka lydian b7, aka lydian dominant, aka mixolydian #4, aka lydomyxian; the fourth mode of B melodic minor"
+
+Still, for Part B of "This song will die", we are (indeed) in uncharted territory:
+
+> ictRecognizer [B, F, Gs, As, Ds, C] E
+"unknown pattern"
+
+-}
 
 {--------------------------------------------------}
 {- 2 -- AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
@@ -976,14 +994,6 @@ ppcL as = map ppc as
 -- We may view time signatures like 4/4, 3/4, et cetera, as pairs of integers.
 
 type TimeSig = (Int,Int) -- well, the integers are supposed to be positive
-
--- Auxiliary functions
-
-{-
-frech :: [Int] -> [Int] -> [Bool]
-frech [] ys = []
-frech xs ys = [elem x ys | x <- xs]
--}
 
 -- Given a time signature and a number of bars, give all rhythmic patterns for the whole span of bars.
 
