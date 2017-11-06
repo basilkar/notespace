@@ -45,12 +45,12 @@ Apart from the auxiliary preexisting datatypes, like Int and [a], the first base
 
 data Note = A | As | B | C | Cs | D | Ds | E | F | Fs | G | Gs
     deriving (Eq, Enum, Ord, Show, Read, Bounded)
-    
+
 -- Not sure if we'll ever need it, but here's a function turning an arbitrary integer into a note.
 
 toNote :: Int -> Note
 toNote m = (toEnum $ m `mod` 12)
-    
+
 -- An auxiliary function that gives the note m halfsteps above the note r (the "root").
 
 halfsteps :: Note -> Int -> Note
@@ -151,6 +151,9 @@ sigScaleM = [0,2,4,5,7,9,11]
 sigScalemh :: [Int] -- harmonic minor scale signature
 sigScalemh = [0,2,3,5,7,8,11]
 
+sigScaleMh :: [Int] -- harmonic major scale signature
+sigScaleMh = [0,2,4,5,7,8,11]
+
 sigScalemm :: [Int] -- melodic minor scale signature
 sigScalemm = [0,2,3,5,7,9,11]
 
@@ -232,6 +235,9 @@ scaleM r = notesBySignature r [0,2,4,5,7,9,11]
 scalemh :: Note -> [Note] -- harmonic minor scale
 scalemh r = notesBySignature r [0,2,3,5,7,8,11]
 
+scaleMh :: Note -> [Note] -- harmonic major scale
+scaleMh r = notesBySignature r [0,2,4,5,7,8,11]
+
 scalemm :: Note -> [Note] -- melodic minor scale
 scalemm r = notesBySignature r [0,2,3,5,7,9,11]
 
@@ -261,7 +267,7 @@ cyclicPermutation m xs     = take l (drop m cxs)
           l = length xs
 
 -- Now, according to established terminology, the m-th mode of a scale sc with root r, should be the (m-1)-th cyclic permutation of the given scale at root r, while, if we're thinking about chords, the m-th inversion should be the m-th cyclic permutation of a given chord (the 0-th inversion is called "root position"); what the heck, we define both.
-          
+
 mode :: Int -> (Note -> [Note]) -> Note -> [Note]
 mode m sc r = cyclicPermutation (m-1) (sc r)
 
@@ -361,17 +367,17 @@ e_aeolian_flat_five = mode 6 scalemm G
 
 {-
 
-> elem e_aeolian_flat_five etymology_solo_suggestions 
+> elem e_aeolian_flat_five etymology_solo_suggestions
 True
 
 But nowhere close to the top ones.
 
-> elemIndex e_aeolian_flat_five etymology_solo_suggestions 
+> elemIndex e_aeolian_flat_five etymology_solo_suggestions
 Just 26
 
 Indeed, E major comes before it!
 
-> elemIndex (scaleM E) etymology_solo_suggestions 
+> elemIndex (scaleM E) etymology_solo_suggestions
 Just 8
 
 In adapting the Levenshtein distance we could think about giving weighs to particular notes (the notes of the root triad, if nothing else).
@@ -433,6 +439,16 @@ and in the same fashion we can find all (traditional) seventh chords in these ke
 
 > map (\ sigs -> scalechords c_major_scale sigs) [sig7ChordMM, sig7ChordMm, sig7Chordmm, sig7ChordmM, sig7Chorddm, sig7Chordam]
 
+The same example for, say, the E harmonic major:
+
+-}
+
+e_harmonic_major = scaleMh E
+
+{-
+
+> map (\ sigs -> scalechords e_harmonic_major sigs) [sig7ChordMM, sig7ChordMm, sig7Chordmm, sig7ChordmM, sig7Chorddm, sig7Chordam]
+[[[E,Gs,B,Ds]],[[Gs,C,Ds,Fs],[B,Ds,Fs,A]],[[A,C,E,Gs]],[[Gs,B,Ds,Fs]],[[Fs,A,C,E]],[[Gs,C,E,Fs]]]
 
 Similarly, we can use the function scalechords to find all perfect fourth intervals, say, of A minor pentatonic.mode 6 scalemm G
 
@@ -468,8 +484,8 @@ OUTPUT a list of lists of notes from the given scale that fit the given signatur
 
 -}
 
-ictRecognizer :: [Note] -> Note -> String
-ictRecognizer ns n 
+icsRecognizer :: [Note] -> Note -> String
+icsRecognizer ns n
     | length ns == 0 = "not a pattern"
     | length sig == 1 = "DYAD: " ++ (show n) ++ " unison"
     | sig == sigInterval2m = "DYAD: " ++ (show n) ++ " minor second"
@@ -495,60 +511,89 @@ ictRecognizer ns n
     | sig == sig7Chordam = "TETRAD: " ++ (show n) ++ " augmented seventh"
     | sig == sig6ChordMM = "TETRAD: " ++ (show n) ++ " major sixth"
     | sig == sig6ChordmM = "TETRAD: " ++ (show n) ++ " minor sixth"
-    | sig == sigScaleM = "SCALE: " ++ (show n) ++ " major, aka ionian"
+    | sig == sigScaleM = "SCALE: " ++ (show n) ++ " major, aka ionian, aka diatonic"
     | sig == sigScalemh = "SCALE: " ++ (show n) ++ " harmonic minor"
     | sig == sigScalemm = "SCALE: " ++ (show n) ++ " melodic minor"
+    | sig == sigScaleMh = "SCALE: " ++ (show n) ++ " harmonic major"
     | sig == sigScaledh = "SCALE: " ++ (show n) ++ " double harmonic, aka byzantine, aka arabic, aka gypsy major"
     | sig == sigScalesd = "SCALE: " ++ (show n) ++ " symmetric diminished, aka diminished, aka octatonic, aka korsakovian, Pijper"
     | sig == sigScalec = "SCALE: " ++ (show n) ++ " chromatic"
     | sig == sigScalewt = "SCALE: " ++ (show n) ++ " whole-tone"
     | sig == sigScalepM = "SCALE: " ++ (show n) ++ " major pentatonic"
     | sig == sigScalepm = "SCALE: " ++ (show n) ++ " minor pentatonic"
+    -- modes of the major scale
     | sig == sigMode 2 sigScaleM = "SCALE: " ++ (show n) ++ " dorian; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " major"
     | sig == sigMode 3 sigScaleM = "SCALE: " ++ (show n) ++ " phrygian; the third mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " major"
     | sig == sigMode 4 sigScaleM = "SCALE: " ++ (show n) ++ " lydian; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 5 ) ++ " major"
     | sig == sigMode 5 sigScaleM = "SCALE: " ++ (show n) ++ " mixolydian; the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " major"
     | sig == sigMode 6 sigScaleM = "SCALE: " ++ (show n) ++ " natural minor, aka aeolian; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 9 ) ++ " major"
     | sig == sigMode 7 sigScaleM = "SCALE: " ++ (show n) ++ " locrian; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " major"
+    -- modes of the melodic minor scale
     | sig == sigMode 2 sigScalemm = "SCALE: " ++ (show n) ++ " dorian b2, aka phrygian 6, aka javanese, aka phrygidorian; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " melodic minor"
     | sig == sigMode 3 sigScalemm = "SCALE: " ++ (show n) ++ " lydian augmented, aka lydian #5; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " melodic minor"
     | sig == sigMode 4 sigScalemm = "SCALE: " ++ (show n) ++ " acoustic, aka overtone, aka lydian b7, aka lydian dominant, aka mixolydian #4, aka lydomyxian; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 5 ) ++ " melodic minor"
     | sig == sigMode 5 sigScalemm = "SCALE: " ++ (show n) ++ " aeolian dominant, aka melodic major, aka aeolian major, aka mixolydian b6, aka hindu, aka myxaeolian; the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " melodic minor"
     | sig == sigMode 6 sigScalemm = "SCALE: " ++ (show n) ++ " half-diminished, aka locrian 2, aka aeolocrian; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 9 ) ++ " melodic minor"
     | sig == sigMode 7 sigScalemm = "SCALE: " ++ (show n) ++ " altered, aka altered dominant, aka super-locrian, aka locrian b4, aka Pomeroy, aka Ravel, aka diminished whole-tone, aka dominant whole-tone; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " melodic minor"
+    -- modes of the harmonic minor scale
     | sig == sigMode 2 sigScalemh = "SCALE: " ++ (show n) ++ " locrian 6; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " harmonic minor"
     | sig == sigMode 3 sigScalemh = "SCALE: " ++ (show n) ++ " ionian #5; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " harmonic minor"
     | sig == sigMode 4 sigScalemh = "SCALE: " ++ (show n) ++ " spanish phrygian, aka romanian, aka ukrainian dorian, aka dorian #4; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " harmonic minor"
     | sig == sigMode 5 sigScalemh = "SCALE: " ++ (show n) ++ " phrygian dominant, aka phrygian major, aka altered phrygian, aka dominant b2 b6, aka freygish, aka mixolydian b9 b13 (Berklee); the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " harmonic minor"
     | sig == sigMode 6 sigScalemh = "SCALE: " ++ (show n) ++ " lydian #2; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 8 ) ++ " harmonic minor"
     | sig == sigMode 7 sigScalemh = "SCALE: " ++ (show n) ++ " altered diminished; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " harmonic minor"
-    | sig == sigMode 2 sigScalemh = "SCALE: " ++ (show n) ++ " lydian #2 #6; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " double harmonic"
-    | sig == sigMode 3 sigScalemh = "SCALE: " ++ (show n) ++ " ultraphrygian, aka phrygian b4 bb7; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " double harmonic"
-    | sig == sigMode 4 sigScalemh = "SCALE: " ++ (show n) ++ " hungarian minor, aka double harmonic minor, aka harmonic minor #4, aka gypsy minor; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " double harmonic"
-    | sig == sigMode 5 sigScalemh = "SCALE: " ++ (show n) ++ " oriental, aka locrian 3 6, aka mixolydian b2 b5; the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " double harmonic"
-    | sig == sigMode 6 sigScalemh = "SCALE: " ++ (show n) ++ " ionian augmented #2, aka ionian #2 #5; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 8 ) ++ " double harmonic"
-    | sig == sigMode 7 sigScalemh = "SCALE: " ++ (show n) ++ " locrian bb3 bb7; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " double harmonic"
+    -- modes of the harmonic major scale
+    | sig == sigMode 2 sigScaleMh = "SCALE: " ++ (show n) ++ " dorian b5; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " harmonic major"
+    | sig == sigMode 3 sigScaleMh = "SCALE: " ++ (show n) ++ " phrygian b4, aka altered 5; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " harmonic major"
+    | sig == sigMode 4 sigScaleMh = "SCALE: " ++ (show n) ++ " lydian b3, aka lydian minor, aka lydian diminished, aka melodic minor #4; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " harmonic major"
+    | sig == sigMode 5 sigScaleMh = "SCALE: " ++ (show n) ++ " mixolydian b2; the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " harmonic major"
+    | sig == sigMode 6 sigScaleMh = "SCALE: " ++ (show n) ++ " lydian augmented #2, aka aeolian b1; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 8 ) ++ " harmonic major"
+    | sig == sigMode 7 sigScaleMh = "SCALE: " ++ (show n) ++ " locrian b7, aka locrian bb7, aka locrian diminished; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " harmonic major"
+    -- modes of the double harmonic scale
+    | sig == sigMode 2 sigScaledh = "SCALE: " ++ (show n) ++ " lydian #2 #6; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " double harmonic"
+    | sig == sigMode 3 sigScaledh = "SCALE: " ++ (show n) ++ " ultraphrygian, aka phrygian b4 bb7; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " double harmonic"
+    | sig == sigMode 4 sigScaledh = "SCALE: " ++ (show n) ++ " hungarian minor, aka double harmonic minor, aka harmonic minor #4, aka gypsy minor; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " double harmonic"
+    | sig == sigMode 5 sigScaledh = "SCALE: " ++ (show n) ++ " oriental, aka locrian 3 6, aka mixolydian b2 b5; the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " double harmonic"
+    | sig == sigMode 6 sigScaledh = "SCALE: " ++ (show n) ++ " ionian augmented #2, aka ionian #2 #5; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 8 ) ++ " double harmonic"
+    | sig == sigMode 7 sigScaledh = "SCALE: " ++ (show n) ++ " locrian bb3 bb7; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " double harmonic"
+    -- mode of the symmetric diminished
     | sig == sigMode 2 sigScalesd = "SCALE: " ++ (show n) ++ " (half-whole-step) symmetric diminished; the second mode of " ++ (show $ toNote $ (fromEnum n) - 1) ++ " symmetric diminished"
     | otherwise = "unknown pattern"
     where
         sig = sort $ signatureByNotes $ nub $ n : ns
-        
+
 {- EXAMPLES -}
 
 {-
 
-> ictRecognizer [A, B, C, D, E, F, G] A
+> icsRecognizer [A, B, C, D, E, F, G] A
 "SCALE: A natural minor, aka aeolian; the sixth mode of C major"
 
-> ictRecognizer [D, Cs, B, As, Gs, Fs] E
+> icsRecognizer [D, Cs, B, As, Gs, Fs] E
 "SCALE: E acoustic, aka overtone, aka lydian b7, aka lydian dominant, aka mixolydian #4, aka lydomyxian; the fourth mode of B melodic minor"
 
 Still, for Part B of "This song will die", we are (indeed) in uncharted territory:
 
-> ictRecognizer [B, F, Gs, As, Ds, C] E
+> icsRecognizer [B, F, Gs, As, Ds, C] E
 "unknown pattern"
 
 -}
+
+{-----------------------------------------------------}
+{- 1.4 -- APPLICATION: THE SEVENTH CHORDS OF A SCALE -}
+{-----------------------------------------------------}
+
+{-
+
+INPUT a note (for the root) and a signature (for the scale)
+OUTPUT a list of strings indicating all seventh chords to be found within the induced scale
+
+To do this, we combine applications 1.2 and 1.3.
+
+-}
+
+recognizedScalechords :: Note -> [Int] -> [String]
+recognizedScalechords r scalesig = map (\ chord -> icsRecognizer chord (head chord)) $ concat $ map (\ chordsig -> scalechords (notesBySignature r scalesig) chordsig) [sig7ChordMM, sig7ChordMm, sig7Chordmm, sig7ChordmM, sig7Chorddm, sig7Chordam]
 
 {--------------------------------------------------}
 {- 2 -- AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
@@ -719,7 +764,7 @@ Nothing
 > tokenComponents e_minor_over_c
 [Single C,Triad (Single E) (Single G) (Single B)]
 
-> subtokens e_minor_over_c 
+> subtokens e_minor_over_c
 [Dyad (Single C) (Triad (Single E) (Single G) (Single B)),Single C,Triad (Single E) (Single G) (Single B),Single E,Single G,Single B]
 
 -}
@@ -771,7 +816,7 @@ sufficient u ctr us
     where
         r = arity ctr
         indices = [1..r]
-        
+
 -- An auxiliary function for the constructor application.
 
 ctrapply :: Chord -> [[Chord]] -> [Chord]
@@ -806,7 +851,7 @@ stripBot :: [Chord] -> [Chord]
 stripBot u = filter (\ a -> a /= ChordBot) u
 
 -- Define the predicate of entailment; interesting that it works without ctrapply or stripBot -- this needs testing.
-        
+
 entails :: [Chord] -> Chord -> Bool
 entails u a
     | not (consistentL u)       = error "inconsistent list"
@@ -979,10 +1024,10 @@ ppcL as = map ppc as
 > ppcL $ paths (Dyad (Triad (Single E) (Single G) (Single B)) (Pentad (Single E) (Single G) (Single B) (Single D) ChordBot))
 ["(2(3E**)*)","(2(3*G*)*)","(2(3**B)*)","(2*(5E****))","(2*(5*G***))","(2*(5**B**))","(2*(5***D*))"]
 
-> ppc a_over_c_major 
+> ppc a_over_c_major
 "(2(3CEG)A)"
 
-> ppc e_minor_over_c 
+> ppc e_minor_over_c
 "(2C(3EGB))"
 
 -}
@@ -1004,7 +1049,7 @@ rhythmPatterns tsig b = [map (\ x -> elem x (numPatterns !! i)) allBeats | i <- 
         numPatterns = concat [choose i allBeats | i <- [0..len]]
         allBeats = [1..(b * (fst tsig))]
         len2 = length numPatterns
-        
+
 -- The following yields all rhythm patterns that stress exactly m many beats of all
 
 rhythmPatternsWith tsig b m = filter ([False | i <- [1..((b*(fst tsig)) - m)]] `isSubsequenceOf`) $ filter ([True | i <- [1..m]] `isSubsequenceOf` ) $ rpats
