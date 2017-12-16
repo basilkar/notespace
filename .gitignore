@@ -1,6 +1,8 @@
-.vscode/settings.json
+*.sf2
+*.mid
 tonnetz/__pycache__/TriangularGrid.cpython-36.pyc
 tonnetz/__pycache__/TonnetzLogicalGrid.cpython-36.pyc
 .vscode/launch.json
+.vscode/settings.json
 .vscode/.ropeproject/objectdb
 .vscode/.ropeproject/config.py
