@@ -33,8 +33,7 @@ def rect(xmin, ymin, width, height):
     return Rect(x=xmin, y=ymin, w=width, h=height)
 
 def play_note_callback(note_name, instance):
-    fluidsynth.play_Note(Note(note_name))
-    time.sleep(1.0)
+    fluidsynth.play_Note(Note(note_name), 8, 100)
 
 def play_note(note_name):
     return partial(play_note_callback, note_name)
