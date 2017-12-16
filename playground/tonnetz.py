@@ -39,6 +39,13 @@ def play_note_callback(note_name, instance):
 def play_note(note_name):
     return partial(play_note_callback, note_name)
 
+def add_tone_button(layout, note_name, position):
+    print(note_name, position)
+    btn = Button(text=note_name)
+    btn.pos_hint = {'center_x':position[0], 'center_y': position[1]}
+    btn.size_hint=(0.05, 0.05)
+    btn.bind(on_press=play_note(note_name))
+    layout.add_widget(btn)
 
 
 def tonnetz_nodes( grid, node_coordinates ):
