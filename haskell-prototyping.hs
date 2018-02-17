@@ -5,7 +5,7 @@
 import Data.List -- for sorting lists, for nub
 import Data.Array -- for the memoization in the definition of Levenshtein metric
 import Math.Combinat -- for rhythmic exercises
-import System.Random -- for the guitar fretboard quizes
+import System.Random -- for the guitar fretboard quizzes
 import Control.Monad -- for the loop-while in the main quiz
 
 -- Define the Levenshtein metric as given on https://www.reddit.com/r/programming/comments/w4gs6/levenshtein_distance_in_haskell/c5a6jjz/ . It is polymorphic, so readily applicable to our case, in contrast to the existing package Text.EditDistance.
@@ -1385,12 +1385,12 @@ type Tuning = Guitarstring -> Note
 fretboard :: Tuning -> Guitarstring -> Fret -> Note
 fretboard tuning string fret = halfsteps (tuning string) (fromEnum fret)
 
-{----------------------------------------}
-{- 5.1 -- APPLICATION: FRETBOARD QUIZES -}
-{----------------------------------------}
+{-----------------------------------------}
+{- 5.1 -- APPLICATION: FRETBOARD QUIZZES -}
+{-----------------------------------------}
 
 {-
-We can now implement the quizes that the youtube guy from above suggested. For this, we will need to use the IO monad. We will also need the Random module. See https://wiki.haskell.org/Introduction_to_IO, https://wiki.haskell.org/IO_inside and  https://www.schoolofhaskell.com/school/starting-with-haskell/libraries-and-frameworks/randoms.
+We can now implement the quizzes that the youtube guy from above suggested. For this, we will need to use the IO monad. We will also need the Random module. See https://wiki.haskell.org/Introduction_to_IO, https://wiki.haskell.org/IO_inside and  https://www.schoolofhaskell.com/school/starting-with-haskell/libraries-and-frameworks/randoms.
 -}
 
 -- To be able to generate random strings, frets, or notes for the needs of the quiz, we need to make the respective types into instances of the class Random.
@@ -1410,7 +1410,7 @@ instance Random Note where
     (noteNumber, generator') -> (toEnum noteNumber, generator')
   random generator = randomR (minBound,maxBound) generator
 
--- Now we can define the quizes as follows.
+-- Now we can define the quizzes as follows.
 
 fretboardQuizOneStandard :: IO ()
 fretboardQuizOneStandard = do
@@ -1454,7 +1454,7 @@ main = do
 --   let b = head (randoms g :: [Bool])
 --   if b then (fretboardQuizOneStandard) else (fretboardQuizTwoStandard)
 
--- In an exactly similar manner we may define quizes for other tunings. Of course, it'd be even better to let the user decide which tuning they want to be quized on. Ma non adesso.
+-- In an exactly similar manner we may define quizzes for other tunings. Of course, it'd be even better to let the user decide which tuning they want to be quized on. Ma non adesso.
 
 -- while :: Bool -> IO () -> IO ()
 -- while False _ = return ()
