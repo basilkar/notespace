@@ -5,6 +5,8 @@
 import Data.List -- for sorting lists, for nub
 import Data.Array -- for the memoization in the definition of Levenshtein metric
 import Math.Combinat -- for rhythmic exercises
+import System.Random -- for the guitar fretboard quizes
+import Control.Monad -- for the loop-while in the main quiz
 
 -- Define the Levenshtein metric as given on https://www.reddit.com/r/programming/comments/w4gs6/levenshtein_distance_in_haskell/c5a6jjz/ . It is polymorphic, so readily applicable to our case, in contrast to the existing package Text.EditDistance.
 
@@ -33,6 +35,11 @@ levenshtein xs ys = memoArray ! (n, m)
 
 -}
 
+-- Define a descending sorting function (check out https://ro-che.info/articles/2016-04-02-descending-sort-haskell), to be used at the definition of submajorization.
+
+sortDesc :: Ord a => [a] -> [a]
+sortDesc = sortBy (flip compare)
+
 {--------------------------------------}
 {- 1 -- AN ENUMERATION TYPE FOR NOTES -}
 {--------------------------------------}
@@ -56,15 +63,36 @@ toNote m = (toEnum $ m `mod` 12)
 halfsteps :: Note -> Int -> Note
 halfsteps r m = (toEnum (((fromEnum r) + m) `mod` 12))
 
--- Auxiliary functions that gives the halfsteps distance between two notes; an absolute and a directed version.
+-- Auxiliary functions that gives the halfsteps distance between two notes; an absolute, a directed, and a change version.
+
+halfstepsMinDistance :: Note -> Note -> Int
+halfstepsMinDistance r s = min (((fromEnum r) - (fromEnum s)) `mod` 12) (((fromEnum s) - (fromEnum r)) `mod` 12)
+
+halfstepsMaxDistance :: Note -> Note -> Int
+halfstepsMaxDistance r s = max (((fromEnum r) - (fromEnum s)) `mod` 12) (((fromEnum s) - (fromEnum r)) `mod` 12)
 
 halfstepsDistance :: Note -> Note -> Int
-halfstepsDistance r s = min (((fromEnum r) - (fromEnum s)) `mod` 12) (((fromEnum s) - (fromEnum r)) `mod` 12)
+halfstepsDistance = halfstepsMinDistance
 
 halfstepsDirectedDistance :: Note -> Note -> Int
 halfstepsDirectedDistance r s = ((fromEnum s) - (fromEnum r)) `mod` 12
 
--- A signature is a list of integers representing intervals. given a root r and a signature sig define the list of notes that are each that many halfsteps apart from the root according to the signature. NB: this is meant to work for non-negative integers for the time being, the intended use being the generation of scales and chords, not of melody.
+clockwiseChange :: Note -> Note -> Int
+clockwiseChange m n = ((fromEnum n) + 12 - (fromEnum m)) `mod` 12
+
+counterclockwiseChange :: Note -> Note -> Int
+counterclockwiseChange m n = - (clockwiseChange n m)
+
+minChange :: Note -> Note -> Int
+minChange m n
+  | absdiff == True = clock
+  | otherwise = counterclock
+    where
+      absdiff = (abs clock) <= (abs counterclock)
+      clock = clockwiseChange m n
+      counterclock = counterclockwiseChange m n
+
+-- A signature is a list of integers representing intervals in halfsteps above a given root. Given a root r and a signature sig define the list of notes that are each that many halfsteps apart from the root according to the signature. NB: this is meant to work for non-negative integers for the time being, the intended use being the generation of scales and chords, not of melody.
 
 type Sig = [Int]
 
@@ -287,9 +315,9 @@ inversionAtRoot m rsc r s = notesBySignature s (signatureByNotes (inversion m rs
 sigMode :: Int -> [Int] -> [Int]
 sigMode m sig = signatureByNotes $ notesBySignature A (cyclicPermutation (m-1) sig) -- the choice of A is arbitrary, any note will do
 
-{-----------------------------------------}
-{- 1.1 -- APPLICATION: SCALES FROM NOTES -}
-{-----------------------------------------}
+{---------------------------------------}
+{- 1.1 -- APPLICATION: IMPRO SUGGESTER -}
+{---------------------------------------}
 
 {-
 
@@ -303,12 +331,12 @@ OUTPUT the (c:cs) sorted by the given metric
 sortByMetric :: ([Note] -> [Note] -> Int) -> [[Note]] -> [Note] -> [[Note]]
 sortByMetric dist cs c = c : (sortOn (\ d -> dist c d) cs)
 
-improScale :: [Note] -> Note -> [[Note]]
-improScale ns r = sortByMetric levenshtein allscales ns
-    where allscales = nub $ [modeAtRoot m scaleM r r | m <- [1..7]] ++ [modeAtRoot m scalepM r r | m <- [1..5]] ++ [modeAtRoot m scalewt r r | m <- [1..6]] ++ [modeAtRoot m scalemh r r | m <- [1..7]] ++ [modeAtRoot m scalemm r r | m <- [1..7]] ++ [modeAtRoot m scalec r r | m <- [1..12]] -- this is still ugly
+scaleSuggester :: [Note] -> Note -> [[Note]]
+scaleSuggester ns r = sortByMetric levenshtein allscales ns
+    where allscales = nub $ [modeAtRoot m scaleM r r | m <- [1..7]] ++ [modeAtRoot m scalepM r r | m <- [1..5]] ++ [modeAtRoot m scalewt r r | m <- [1..6]] ++ [modeAtRoot m scalemh r r | m <- [1..7]] ++ [modeAtRoot m scalemm r r | m <- [1..7]] ++ [modeAtRoot m scalec r r | m <- [1..12]] ++ [modeAtRoot m scaleMh r r | m <- [1..7]] -- this is still ugly
 
-improTriad :: [Note] -> Note -> [[Note]]
-improTriad ns r = sortByMetric levenshtein alltriads ns
+triadSuggester :: [Note] -> Note -> [[Note]]
+triadSuggester ns r = sortByMetric levenshtein alltriads ns
     where alltriads = nub $ [inversionAtRoot m triadM r r | m <- [1..3]] ++ [inversionAtRoot m triadm r r | m <- [1..3]] ++ [inversionAtRoot m triadd r r | m <- [1..3]] ++ [inversionAtRoot m triada r r | m <- [1..3]]
 
 {- EXAMPLES
@@ -334,23 +362,23 @@ improTriad ns r = sortByMetric levenshtein alltriads ns
 > sortByMetric levenshtein [modeAtRoot m scalemm C C | m <- [1..7]] (yieldOfChord c_major_extended)
 [[C,E,G],[C,D,E,Fs,G,A,As],[C,D,E,F,G,Gs,As],[C,D,Ds,F,G,A,B],[C,Cs,Ds,F,G,A,As],[C,D,E,Fs,Gs,A,B],[C,Cs,Ds,E,Fs,Gs,As],[C,D,Ds,F,Fs,Gs,As]]
 
-> improScale [C,G,E] C
+> scaleSuggester [C,G,E] C
 [[C,G,E],[C,D,E,G,A],[C,D,F,G,As],[C,D,F,G,A],[C,Ds,F,G,As],[C,Ds,F,Gs,As],[C,D,E,Fs,Gs,As],[C,D,E,F,G,A,B],[C,D,Ds,F,G,A,As],[C,Cs,Ds,F,G,Gs,As],[C,D,E,Fs,G,A,B],[C,D,E,F,G,A,As],[C,D,Ds,F,G,Gs,As],[C,D,Ds,F,G,Gs,B],[C,D,E,F,Gs,A,B],[C,D,Ds,Fs,G,A,As],[C,Cs,E,F,G,Gs,As],[C,Ds,E,Fs,G,A,B],[C,Cs,Ds,E,Fs,Gs,A],[C,D,Ds,F,G,A,B],[C,Cs,Ds,F,G,A,As],[C,D,E,Fs,Gs,A,B],[C,D,E,Fs,G,A,As],[C,D,E,F,G,Gs,As],[C,Cs,Ds,E,Fs,Gs,As],[C,Cs,Ds,F,Fs,Gs,As],[C,Cs,Ds,F,Fs,A,As],[C,D,Ds,F,Fs,Gs,As],[C,Cs,D,Ds,E,F,Fs,G,Gs,A,As,B]]
 
-> improScale [C,G,E] A
+> scaleSuggester [C,G,E] A
 [[C,G,E],[A,C,D,E,G],[A,B,Cs,E,Fs],[A,B,D,E,G],[A,C,D,F,G],[A,B,D,E,Fs],[A,B,C,D,E,Fs,G],[A,As,C,D,E,F,G],[A,B,C,D,E,F,G],[A,B,C,D,E,F,Gs],[A,B,C,Ds,E,Fs,G],[A,C,Cs,Ds,E,Fs,Gs],[A,B,C,D,E,Fs,Gs],[A,As,C,D,E,Fs,G],[A,B,Cs,D,E,Fs,Gs],[A,B,Cs,Ds,E,Fs,Gs],[A,B,Cs,D,E,Fs,G],[A,As,C,D,Ds,F,G],[A,B,Cs,Ds,F,G],[A,As,C,D,Ds,Fs,G],[A,As,Cs,D,E,F,G],[A,As,C,Cs,Ds,F,Fs],[A,B,Cs,Ds,E,Fs,G],[A,B,Cs,D,E,F,G],[A,B,C,D,Ds,F,G],[A,As,C,Cs,Ds,F,G],[A,B,Cs,D,F,Fs,Gs],[A,B,Cs,Ds,F,Fs,Gs],[A,As,B,C,Cs,D,Ds,E,F,Fs,G,Gs]]
 
-> improTriad [C,G,E] C
+> triadSuggester [C,G,E] C
 [[C,G,E],[C,Ds,Gs],[C,F,A],[C,E,G],[C,E,A],[C,F,Gs],[C,Ds,G],[C,Ds,A],[C,Fs,A],[C,Ds,Fs],[C,E,Gs]]
 
-> improTriad [C,G,E] A
+> triadSuggester [C,G,E] A
 [[C,G,E],[A,Cs,E],[A,C,E],[A,C,F],[A,D,Fs],[A,Cs,Fs],[A,D,F],[A,C,Fs],[A,Ds,Fs],[A,C,Ds],[A,Cs,F]]
 
 Note that the Levenshtein distance needs adaptation to fit some musical intuitions. For example, here is what we get for the song "Etymology":
 
 -}
 
-etymology_solo_suggestions = improScale (sort $ nub $ [E,G,D,C,Ds,G,A,C,E,G,Ds,G]) E
+etymology_solo_suggestions = scaleSuggester (sort $ nub $ [E,G,D,C,Ds,G,A,C,E,G,Ds,G]) E
 
 {-
 > etymology_solo_suggestions
@@ -574,7 +602,16 @@ icsRecognizer ns n
 
 Still, for Part B of "This song will die", we are (indeed) in uncharted territory:
 
-> icsRecognizer [B, F, Gs, As, Ds, C] E
+> icsRecognizer [E, F, Gs, As, B, C, D] E
+"unknown pattern"
+
+> icsRecognizer [E, F, Gs, As, B, C, Ds] E
+"unknown pattern"
+
+> icsRecognizer [E, F, Gs, As, B, Cs, D] E
+"unknown pattern"
+
+> icsRecognizer [E, F, Gs, As, B, Cs, Ds] E
 "unknown pattern"
 
 -}
@@ -585,15 +622,48 @@ Still, for Part B of "This song will die", we are (indeed) in uncharted territor
 
 {-
 
-INPUT a note (for the root) and a signature (for the scale)
-OUTPUT a list of strings indicating all seventh chords to be found within the induced scale
+INPUT a note (for the root) and a signature (for the type of scale)
+OUTPUT a list of strings indicating all triads and all tetrads to be found within the induced scale
 
 To do this, we combine applications 1.2 and 1.3.
 
 -}
 
-recognizedScalechords :: Note -> [Int] -> [String]
-recognizedScalechords r scalesig = map (\ chord -> icsRecognizer chord (head chord)) $ concat $ map (\ chordsig -> scalechords (notesBySignature r scalesig) chordsig) [sig7ChordMM, sig7ChordMm, sig7Chordmm, sig7ChordmM, sig7Chorddm, sig7Chordam]
+scalechordRecognizer :: Note -> [Int] -> [String]
+scalechordRecognizer r scalesig = map (\ chord -> icsRecognizer chord (head chord)) $ concat $ map (\ chordsig -> scalechords (notesBySignature r scalesig) chordsig) [sigTriadM, sigTriadm, sigTriada, sigTriadd, sig7ChordMM, sig7ChordMm, sig7Chordmm, sig7ChordmM, sig7Chorddm, sig7Chordam]
+
+{- EXAMPLES -}
+
+{-
+
+The chords of E minor pentatonic scale
+
+> scalechordRecognizer E sigScalepm
+["TRIAD: G major","TRIAD: E minor","TETRAD: E minor seventh"]
+
+of E major scale
+
+> scalechordRecognizer E sigScaleM
+["TRIAD: E major","TRIAD: A major","TRIAD: B major","TRIAD: Fs minor","TRIAD: Gs minor","TRIAD: Cs minor","TRIAD: Ds diminished","TETRAD: E major seventh","TETRAD: A major seventh","TETRAD: B seventh","TETRAD: Fs minor seventh","TETRAD: Gs minor seventh","TETRAD: Cs minor seventh","TETRAD: Ds half-diminished, aka minor seventh b5"]
+
+and of A double harmonic scale
+
+> scalechordRecognizer A sigScaledh
+["TRIAD: A major","TRIAD: As major","TRIAD: Cs major","TRIAD: As minor","TRIAD: Cs minor","TRIAD: D minor","TRIAD: A augmented","TRIAD: Cs augmented","TRIAD: F augmented","TRIAD: As diminished","TRIAD: D diminished","TETRAD: A major seventh","TETRAD: As major seventh","TETRAD: As seventh","TETRAD: As minor major seventh","TETRAD: D minor major seventh","TETRAD: As minor seventh","TETRAD: As half-diminished, aka minor seventh b5"]
+
+-}
+
+{--------------------------------------------}
+{- 1.5 -- APPLICATION: A LITERATE SUGGESTER -}
+{--------------------------------------------}
+
+-- Now that we have a recognizer, we can also have a version of suggester (see application 1.1) where we get the names of the suggested scales or chords, rather than the note lists themselves.
+
+scaleLSuggester :: [Note] -> Note -> [String]
+scaleLSuggester ns r = filter (\ string -> string /= "unknown pattern") $ sort $ nub $ map (\ scale -> icsRecognizer scale r) $ scaleSuggester (sort $ nub $ ns) r
+
+triadLSuggester :: [Note] -> Note -> [String]
+triadLSuggester ns r = filter (\ string -> string /= "unknown pattern") $ sort $ nub $ map (\ triad -> icsRecognizer triad r) $ triadSuggester (sort $ nub $ ns) r
 
 {--------------------------------------------------}
 {- 2 -- AN INDUCTIVE TYPE FOR CHORD CONSTRUCTIONS -}
@@ -1052,5 +1122,340 @@ rhythmPatterns tsig b = [map (\ x -> elem x (numPatterns !! i)) allBeats | i <- 
 
 -- The following yields all rhythm patterns that stress exactly m many beats of all
 
+rhythmPatternsWith :: (Int, Int) -> Int -> Int -> [[Bool]]
 rhythmPatternsWith tsig b m = filter ([False | i <- [1..((b*(fst tsig)) - m)]] `isSubsequenceOf`) $ filter ([True | i <- [1..m]] `isSubsequenceOf` ) $ rpats
     where rpats = rhythmPatterns tsig b
+
+{- EXAMPLES -}
+
+{-
+
+Say we want to practice on accentuating 2 out of 4 beats, i.e., out of one bar of a typical 4/4 song.
+
+> rhythmPatternsWith (4,4) 1 2
+[[True,True,False,False],[True,False,True,False],[True,False,False,True],[False,True,True,False],[False,True,False,True],[False,False,True,True]]
+
+Here are all ways to accentuate three out of eight eighths.
+
+> rhythmPatternsWith (8,8) 1 3
+[[True,True,True,False,False,False,False,False],[True,True,False,True,False,False,False,False],[True,True,False,False,True,False,False,False],[True,True,False,False,False,True,False,False],[True,True,False,False,False,False,Tr
+ue,False],[True,True,False,False,False,False,False,True],[True,False,True,True,False,False,False,False],[True,False,True,False,True,False,False,False],[True,False,True,False,False,True,False,False],[True,False,True,False,False
+,False,True,False],[True,False,True,False,False,False,False,True],[True,False,False,True,True,False,False,False],[True,False,False,True,False,True,False,False],[True,False,False,True,False,False,True,False],[True,False,False,T
+rue,False,False,False,True],[True,False,False,False,True,True,False,False],[True,False,False,False,True,False,True,False],[True,False,False,False,True,False,False,True],[True,False,False,False,False,True,True,False],[True,Fals
+e,False,False,False,True,False,True],[True,False,False,False,False,False,True,True],[False,True,True,True,False,False,False,False],[False,True,True,False,True,False,False,False],[False,True,True,False,False,True,False,False],[
+False,True,True,False,False,False,True,False],[False,True,True,False,False,False,False,True],[False,True,False,True,True,False,False,False],[False,True,False,True,False,True,False,False],[False,True,False,True,False,False,True
+,False],[False,True,False,True,False,False,False,True],[False,True,False,False,True,True,False,False],[False,True,False,False,True,False,True,False],[False,True,False,False,True,False,False,True],[False,True,False,False,False,
+True,True,False],[False,True,False,False,False,True,False,True],[False,True,False,False,False,False,True,True],[False,False,True,True,True,False,False,False],[False,False,True,True,False,True,False,False],[False,False,True,Tru
+e,False,False,True,False],[False,False,True,True,False,False,False,True],[False,False,True,False,True,True,False,False],[False,False,True,False,True,False,True,False],[False,False,True,False,True,False,False,True],[False,False
+,True,False,False,True,True,False],[False,False,True,False,False,True,False,True],[False,False,True,False,False,False,True,True],[False,False,False,True,True,True,False,False],[False,False,False,True,True,False,True,False],[Fa
+lse,False,False,True,True,False,False,True],[False,False,False,True,False,True,True,False],[False,False,False,True,False,True,False,True],[False,False,False,True,False,False,True,True],[False,False,False,False,True,True,True,F
+alse],[False,False,False,False,True,True,False,True],[False,False,False,False,True,False,True,True],[False,False,False,False,False,True,True,True]]
+*Main>
+
+Lacking a gui, it would be nice to have a pretty-print of this function too---although the complexity is, of course, what it is---ma non adesso.
+
+-}
+
+{-------------------------------------}
+{- 4 -- TYMOCZKO CHORD CHANGE SPACES -}
+{-------------------------------------}
+
+{-
+
+The following draws from [Tymoczko-2006, Tymoczko-2011-book, Tymoczko-2012], and quite substantially from [Hall-Tymoczko-2012]. We'll use n-dimensional Moebius-strip-like spaces, called "orbifolds" in differential geometry, to model harmonies of n-note chord changes, or better, of n-note voice leadings. Let's see how far we can get without using something like the "Data.Modular" module. A basic correspondence to guide the intuition is given by
+
+music - math
+chord - point
+voice leading - vector
+scale - metric
+
+The point of departure is to understand that "n-chords" are simply n-tuples of notes, and chord changes are differences (say, in halfsteps) between the corresponding notes in each voice; to define types to talk about these things wouldn't be a big deal. The interest lies in the notion of distance between two such changes; it is the definition of a distance that would turn each such type into a metric space, but there are good musical reasons to not want to restrict to any particular metric. Instead, we're going to define a partial order in these types, called "submajorization". I think here of the resulting structures as "Tymoczko chord change spaces" or just "Tymoczko spaces". It would be interesting to have a definition of this partial order by induction on n---we'll see.
+
+-}
+
+-- First define the submajorization order in some generality. The predicate "c submaj d" is to be read as "c is submajorized by d", so we have a kind of "less than or equal to".
+
+submaj :: [Int] -> [Int] -> Bool
+submaj xs ys
+  | length ys == len = foldl (&&) True [(sum $ take i sxs) <= (sum $ take i sys) | i <- [1..len]]
+  | otherwise = error "submaj: inputs have unequal length"
+  where
+    len = length xs
+    sxs = sortDesc xs
+    sys = sortDesc ys
+
+-- Given two n-voicings v and w, define their displacement set. Note that for this purpose we need zip not with any (symmetric) distance function, but with the minimal change function, since we're interested in voice leadings, that is, in changes between voicings: we have to take into account that a single voice may move higher or lower.
+
+displacement :: [Note] -> [Note] -> [Int]
+displacement ns ms
+  | length ms == length ns = zipWith minChange ns ms
+  | otherwise = error "displacement: inputs have unequal lengths"
+
+{- EXAMPLES -}
+
+{-
+
+> displacement [C, D, G] [C, F, A]
+[0,3,2]
+
+> displacement [C, D, G] [Cs, D, G]
+[1,0,0]
+
+> displacement [C, E, G] [Cs, E, Fs]
+[1,0,-1]
+
+> submaj (displacement [C, D, G] [Cs, D, G]) (displacement [C, D, G] [C, F, A])
+True
+
+The following adapts the example from Figure 4 in [Hall-Tymoczko-2012].
+
+> submaj (displacement [C, Ds] [D, F]) (displacement [C, Ds] [F,D])
+True
+
+And this one adapts the example from [Hall-Tymoczko-2012, pp. 280, 282], concerning which chord divides the octave more evenly: C major triad or C suspended fourth triad (which is not supported yet above!)? According to our implementation so far we get
+
+> submaj (displacement [C, E, G] [C, E, Gs]) (displacement [C, F, G] [C, E, Gs])
+False
+
+and
+
+> submaj (displacement [C, F, G] [C, E, Gs]) (displacement [C, E, G] [C, E, Gs])
+True
+
+which is contrary to traditional musical intuition. Obviously, we need the notion of "T-closeness" from the above reference... Now, this will be tricky, since this notion is defined by existential quantification.
+
+-}
+
+{----------------------}
+{- 4.1 -- T-CLOSENESS -}
+{----------------------}
+
+{-
+
+We follow [Hall-Tymoczko-2012] a bit more closely, in particular, from section 2.1 on.
+
+-}
+
+-- Define the "sigma j" of a list, that is, the sum of the j largest elements of a list (the authors say "multiset").
+
+largestElSum :: Int -> [Int] -> Int
+largestElSum j ns = sum $ take j (sortDesc ns)
+
+-- Define the "sigma j ball" of a list [Hall-Tymoczko-2012, Definition 5] as a predicate. Input a list (for the vector), a j, and a list (for the multiset), and output "yes" if the vector is in the sigma j ball of the multiset.
+
+inBall :: [Int] -> Int -> [Int] -> Bool
+inBall vs j ns = largestElSum j (map abs vs) <= largestElSum j ns
+
+-- With the help of inBall, define the inner and outer submajorization balls. The inner one is the intersection of all sigma j balls, while the outer one is their union.
+
+inInnerBall :: [Int] -> [Int] -> Bool
+inInnerBall vs ns = all (\ j -> inBall vs j ns) [1..(length vs)]
+
+inOuterBall :: [Int] -> [Int] -> Bool
+inOuterBall vs ns = any (\ j -> inBall vs j ns) [1..(length vs)]
+
+{- EXAMPLES -}
+
+{-
+
+> inBall [1,-2,3] 1 [2,2,2]
+False
+
+> inBall [1,-2,3] 2 [2,2,2]
+False
+
+> inBall [1,-2,3] 3 [2,2,2]
+True
+
+> inInnerBall [1,-2,3] [2,2,2]
+False
+
+> inOuterBall [1,-2,3] [2,2,2]
+True
+
+> inInnerBall [1,-1,1] [2,2,2]
+True
+
+> inOuterBall [1,-1,1] [2,2,2]
+True
+
+-}
+
+-- Now to the concept of T-closeness. Given a change X = {x_1, ..., x_n}, say "absolute change" and write |X| for the change {|x_1|, ..., |x_n|}; also, write X-x for the change {x_1 - x, ..., x_n - x}. A straightforward interpretation of Definition 6 of Hall & Tymoczko, leads us to say that an n-change W is T-smaller than an n-change V if and only if for all 1-changes x there exist 1-changes y such that the absolute change |W - y| is submajorized by the absolute change |V - x|. The immediate questions are: is the carrier of x exhaustible? is the carrier of y searchable? (in the sense of [Escardo-2008]) Well, duh: in our case they can both taken to be finite, so apparently we don't even need the authors' algorithm in Appendix A.2.
+
+tsmaller :: [Int] -> [Int] -> Bool
+tsmaller ws vs = all (\ x -> (any (\ y -> submaj (map abs $ map (\ w -> w - y) ws) (map abs $ map (\ v -> v - x) vs)) xyrange)) xyrange
+  where
+    xyrange = [1..12]
+
+{- EXAMPLES -}
+
+{-
+
+> tsmaller (displacement [C, F, G] [C, E, Gs]) (displacement [C, E, G] [C, E, Gs])
+False
+
+-}
+
+-- Nevertheless, it doesn't hurt in principle to have the full generality. This we would need, had we introduced the type Note as a continuous type.
+
+-- Define the middle interval of a list.
+
+middleInterval :: (Fractional t, Ord t) => [t] -> [t]
+middleInterval xs = [minimum mset, maximum mset]
+  where
+    mset = map (\ (m, n) -> (m + n)/2) $ zip supxs sdownxs
+    supxs = sort xs
+    sdownxs = sortDesc xs
+
+-- Define the set of averages of a given list (the set S of [Hall-Tymoczko-2012, Theorem2]).
+
+averages :: (Eq a, Fractional a) => [a] -> [a]
+averages xs = nub $ map (\ (m, n) -> (m + n)/2) [(x, y) | x <- xs, y <- xs]
+
+{------------------------------}
+{- 5 -- CONCERNING THE GUITAR -}
+{------------------------------}
+
+{-
+Watching this guy here, https://www.youtube.com/watch?v=b9pYEjZ4l48, it seemed reasonable to start implementing some of the quirks that are particular to the guitar.
+-}
+
+-- Start by introducing two basic datatypes, one for the strings and one for the frets.
+
+data Guitarstring = StringOne | StringTwo | StringThree | StringFour | StringFive | StringSix
+  deriving (Eq, Enum, Ord, Show, Read, Bounded)
+
+data Fret = FretZero | FretOne | FretTwo | FretThree | FretFour | FretFive | FretSix | FretSeven | FretEight | FretNine | FretTen | FretEleven | FretTwelve
+  deriving (Eq, Enum, Ord, Show, Read, Bounded)
+
+-- Then a couple of the common tunings.
+
+tuningStandard :: Guitarstring -> Note
+tuningStandard string = case string of
+  StringOne -> E
+  StringTwo -> B
+  StringThree -> G
+  StringFour -> D
+  StringFive -> A
+  StringSix -> E
+
+tuningDropD :: Guitarstring -> Note
+tuningDropD string = case string of
+  StringOne -> E
+  StringTwo -> B
+  StringThree -> G
+  StringFour -> D
+  StringFive -> A
+  StringSix -> D
+
+tuningOpenD :: Guitarstring -> Note
+tuningOpenD string = case string of
+  StringOne -> D
+  StringTwo -> A
+  StringThree -> Fs
+  StringFour -> D
+  StringFive -> A
+  StringSix -> D
+
+tuningDadgad :: Guitarstring -> Note
+tuningDadgad string = case string of
+  StringOne -> D
+  StringTwo -> A
+  StringThree -> G
+  StringFour -> D
+  StringFive -> A
+  StringSix -> D
+
+tuningNST :: Guitarstring -> Note
+tuningNST string = case string of
+  StringOne -> G
+  StringTwo -> E
+  StringThree -> A
+  StringFour -> D
+  StringFive -> G
+  StringSix -> C
+
+-- Just a grain of sugar.
+
+type Tuning = Guitarstring -> Note
+
+-- And now, the fretboard; given a tuning, we allot notes to the pairs of strings and frets.
+
+fretboard :: Tuning -> Guitarstring -> Fret -> Note
+fretboard tuning string fret = halfsteps (tuning string) (fromEnum fret)
+
+{----------------------------------------}
+{- 5.1 -- APPLICATION: FRETBOARD QUIZES -}
+{----------------------------------------}
+
+{-
+We can now implement the quizes that the youtube guy from above suggested. For this, we will need to use the IO monad. We will also need the Random module. See https://wiki.haskell.org/Introduction_to_IO, https://wiki.haskell.org/IO_inside and  https://www.schoolofhaskell.com/school/starting-with-haskell/libraries-and-frameworks/randoms.
+-}
+
+-- To be able to generate random strings, frets, or notes for the needs of the quiz, we need to make the respective types into instances of the class Random.
+
+instance Random Guitarstring where
+  randomR (string,string') generator = case randomR (fromEnum string, fromEnum string') generator of
+    (stringNumber, generator') -> (toEnum stringNumber, generator')
+  random generator = randomR (minBound,maxBound) generator
+
+instance Random Fret where
+  randomR (fret,fret') generator = case randomR (fromEnum fret, fromEnum fret') generator of
+    (fretNumber, generator') -> (toEnum fretNumber, generator')
+  random generator = randomR (minBound,maxBound) generator
+
+instance Random Note where
+  randomR (note,note') generator = case randomR (fromEnum note, fromEnum note') generator of
+    (noteNumber, generator') -> (toEnum noteNumber, generator')
+  random generator = randomR (minBound,maxBound) generator
+
+-- Now we can define the quizes as follows.
+
+fretboardQuizOneStandard :: IO ()
+fretboardQuizOneStandard = do
+  g1 <- newStdGen
+  g2 <- newStdGen
+  let fret = head (randoms g1 :: [Fret])
+  let string = head (randoms g2 :: [Guitarstring])
+  let answer = fretboard tuningStandard string fret
+  putStrLn ("What is the note on fret " ++ (show $ fromEnum fret) ++ " of string " ++ (show $ (fromEnum string) + 1) ++ " in standard tuning?")
+  guess <- getLine
+  if guess == (show answer) then putStr "Correct!" else putStr ("Wrong! The note is actually " ++ (show answer) ++ ".")
+
+fretboardQuizTwoStandard :: IO ()
+fretboardQuizTwoStandard = do
+  g1 <- newStdGen
+  g2 <- newStdGen
+  let note = head (randoms g1 :: [Note])
+  let string = head (randoms g2 :: [Guitarstring])
+  putStrLn ("Where is the note " ++ (show note) ++ " on string " ++ (show $ (fromEnum string) + 1) ++ " in standard tuning?")
+  guess <- readLn --getLine
+  if (fretboard tuningStandard string (toEnum guess)) == note then putStr ("Correct!") else putStr ("Wrong.") -- Needs some more work to also provide the user with the correct answer here.
+
+-- For the following version see https://stackoverflow.com/a/35639761/3749908.
+
+main :: IO ()
+main = do
+  let loop = do
+      g <- newStdGen
+      let b = head (randoms g :: [Bool])
+      if b then (fretboardQuizOneStandard) else (fretboardQuizTwoStandard)
+      putStrLn (" Hit enter to continue or enter an arbitrary key to exit.")
+      usersays <- getLine
+      when (usersays == "") loop
+  loop
+
+-- This works already:
+
+-- main :: IO ()
+-- main = do
+--   g <- newStdGen
+--   let b = head (randoms g :: [Bool])
+--   if b then (fretboardQuizOneStandard) else (fretboardQuizTwoStandard)
+
+-- In an exactly similar manner we may define quizes for other tunings. Of course, it'd be even better to let the user decide which tuning they want to be quized on. Ma non adesso.
+
+-- while :: Bool -> IO () -> IO ()
+-- while False _ = return ()
+-- while True a = do a
