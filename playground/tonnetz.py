@@ -19,7 +19,8 @@ from functools import partial
 this_dir = os.path.dirname( __file__ )
 # the directory 'soundfonts/' must be a sibling directory to one containing this file
 soundfont_filepath = os.path.abspath(os.path.join(this_dir, '..', 'soundfonts/GeneralUserGSv1.471.sf2'))
-fluidsynth.init(soundfont_filepath)
+driver='alsa'
+fluidsynth.init(soundfont_filepath, driver)
 # the directory 'tonnetz/' must be a sibling directory to one containing this file
 tonnetz_dir = os.path.abspath(os.path.join(this_dir, '..', 'tonnetz'))
 sys.path.insert(0, tonnetz_dir)
