@@ -1,5 +1,7 @@
-*.sf2
 *.mid
+*.pyc
+*.sf2
+*.SF2
 tonnetz/__pycache__/TriangularGrid.cpython-36.pyc
 tonnetz/__pycache__/TonnetzLogicalGrid.cpython-36.pyc
 .vscode/launch.json

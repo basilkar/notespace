@@ -1,3 +1,7 @@
+To isntall the packages required from python run  
+pip3 install -r python-reqs.txt
+
+
 Sample features:
 
 1. input a set of notes, output fitting scales {haskell-prototyping.hs: improScale}  
