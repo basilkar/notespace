@@ -4,7 +4,7 @@ import math
 from sympy.geometry import *
 
 # equilateral triangular grid
-# basis vectors: ds = [ds, 0], dr = [ds*cos(120°), ds*sin(120°)]  
+# basis vectors: ds = [ds, 0], dr = [ds*cos(120°), ds*sin(120°)]
 
 """
                 *
@@ -12,7 +12,7 @@ from sympy.geometry import *
               / |
              *--|--*-----*
               \ |   \   /
-          ds   \|    \ /
+          dr   \|    \ /
                 *-----*
                    ds = dx
 """
@@ -63,21 +63,19 @@ def minimal_enclosing_parallelogram( tg, rect ):
     jmax = max( math.ceil( top_left.y ), math.ceil( top_right.y ) ) # topmost
 
     return imin, imax, jmin, jmax
-    
+
 
 def cart_rect_contains_tri_pt( tg, rect, triIdx):
     cart_pt = tg.tri2cart(triIdx.x, triIdx.y)
-    x_in_bounds = cart_pt[0] > rect.x and cart_pt[0] < rect.x + rect.w 
+    x_in_bounds = cart_pt[0] > rect.x and cart_pt[0] < rect.x + rect.w
     y_in_bounds = cart_pt[1] > rect.y and cart_pt[1] < rect.y + rect.h
-    return x_in_bounds and y_in_bounds 
+    return x_in_bounds and y_in_bounds
 
 def triangular_grid_coordinates( tg, rect ):
- 
+
     imin, imax, jmin, jmax = minimal_enclosing_parallelogram( tg, rect )
 
     Is = range(imin, imax+1)
     Js = range(jmin, jmax+1)
-    candidate_nodes = [(i,j) for i in Is for j in Js]
 
-    node_in_rect = lambda index: cart_rect_contains_tri_pt(tg, rect, Point(index[0], index[1]))
-    return filter(node_in_rect, candidate_nodes)
+    return [(i,j) for i in Is for j in Js if cart_rect_contains_tri_pt(tg, rect, Point(i, j))]
