@@ -1,13 +1,14 @@
-import unittest
+import math
 import os
 import sys
-import math
+import unittest
 import TriangularGrid as tg
 from sympy.geometry import Point
 from collections import namedtuple
 
 
-# the directory 'tonnetz/' must be a sibling directory to one containing this folder
+# the directory 'tonnetz/' must be a sibling directory to one containing
+# this folder
 tonnetz_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                            '..',
                                            'tonnetz'))
