@@ -7,3 +7,10 @@ tonnetz/__pycache__/TonnetzLogicalGrid.cpython-36.pyc
 .vscode/settings.json
 .vscode/.ropeproject/objectdb
 .vscode/.ropeproject/config.py
+
+.stack-work/
+fun-notespace.cabal
+*~
+fun-notespace/package.yaml
+fun-notespace/LICENSE
+fun-notespace/.gitignore
