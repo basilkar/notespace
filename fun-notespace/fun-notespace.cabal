@@ -1,20 +1,62 @@
-name:                fun-notespace
-version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/fun-notespace#readme
-license:             BSD3
-license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2018 Author name here
-category:            Web
-build-type:          Simple
-cabal-version:       >=1.10
-extra-source-files:  README.md
+cabal-version: 1.12
 
-executable fun-notespace
-  hs-source-dirs:      src
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  build-depends:       base >= 4.7 && < 5
+-- This file has been generated from package.yaml by hpack version 0.31.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 9e0143fccf7ea7bc1f33d069ac9abb737b09bd47c77a9088631f8610676072a5
+
+name:           fun-notespace
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/basilkar/fun-notespace#readme>
+homepage:       https://github.com/basilkar/fun-notespace#readme
+bug-reports:    https://github.com/basilkar/fun-notespace/issues
+author:         Basil Karádais
+maintainer:     karadais@gmail.com
+copyright:      2018 Basil Karádais
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/basilkar/fun-notespace
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_fun_notespace
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable fun-notespace-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_fun_notespace
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , fun-notespace
+  default-language: Haskell2010
+
+test-suite fun-notespace-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_fun_notespace
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , fun-notespace
+  default-language: Haskell2010
