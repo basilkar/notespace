@@ -1,3 +1,5 @@
+# fun-notespace
+
 Sample features:
 
 1. input a set of notes, output fitting scales {haskell-prototyping.hs: improScale}  
