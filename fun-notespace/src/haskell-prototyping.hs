@@ -614,6 +614,10 @@ Still, for Part B of "This song will die", we are (indeed) in uncharted territor
 > icsRecognizer [E, F, Gs, As, B, Cs, Ds] E
 "unknown pattern"
 
+Also:
+> icsRecognizer [A, As, C, Ds, E, F, G] A
+"unknown pattern"
+
 -}
 
 {-----------------------------------------------------}
@@ -660,7 +664,7 @@ and of A double harmonic scale
 -- Now that we have a recognizer, we can also have a version of suggester (see application 1.1) where we get the names of the suggested scales or chords, rather than the note lists themselves.
 
 scaleLSuggester :: [Note] -> Note -> [String]
-scaleLSuggester ns r = filter (\ string -> string /= "unknown pattern") $ sort $ nub $ map (\ scale -> icsRecognizer scale r) $ scaleSuggester (sort $ nub $ ns) r
+scaleLSuggester ns r = filter (\ string -> string /= "unknown pattern") $ nub $ map (\ scale -> icsRecognizer scale r) $ scaleSuggester (sort $ nub $ ns) r
 
 triadLSuggester :: [Note] -> Note -> [String]
 triadLSuggester ns r = filter (\ string -> string /= "unknown pattern") $ sort $ nub $ map (\ triad -> icsRecognizer triad r) $ triadSuggester (sort $ nub $ ns) r
@@ -1459,3 +1463,22 @@ main = do
 -- while :: Bool -> IO () -> IO ()
 -- while False _ = return ()
 -- while True a = do a
+
+{---------------------------------------}
+{- 6 -- NEGATIVE HARMONY TRINKETS ------}
+{---------------------------------------}
+
+negative :: Note -> Note
+negative n = case n of
+  C -> G
+  Cs -> Fs
+  D -> F
+  Ds -> E
+  E -> Ds
+  F -> D
+  Fs -> Cs
+  G -> C
+  Gs -> B
+  A -> As
+  As -> A
+  B -> Gs
