@@ -4,7 +4,8 @@ import os
 import sys
 import math
 
-# the directory 'tonnetz/' must be a sibling directory to one containing this folder
+# the directory 'tonnetz/' must be a sibling directory 
+# to one containing this folder
 tonnetz_dir = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'tonnetz'))
 sys.path.insert(0, tonnetz_dir)
 

@@ -4,7 +4,7 @@ import mingus.core.intervals as intervals
 
 
 print(notes.is_valid_note('C#'))
-print(notes.int_to_note(0)) # [0,..,11]
+print(notes.int_to_note(0))  # [0,..,11]
 
 
 print(keys.get_notes("C"))
