@@ -11,7 +11,7 @@ def keys():
     return list(map(lambda x: x[0], mingkeys.keys))
 
 
-def scaleNotes(key, scale):
+def notesOfTheScale(key, scale):
     if scale == 'Chromatic':
         return mingscales.Chromatic(key).ascending()
     elif scale == 'Whole Tone':
@@ -21,64 +21,80 @@ def scaleNotes(key, scale):
     else:
         return []
 
-app = QApplication([])
-app.setApplicationName("Arm me with harmony.")
 
-mainLayout = QVBoxLayout()
+def keyScaleSelectorWidget():
 
-layout0 = QHBoxLayout()
+    keysComboBox = QComboBox()
+    keysComboBox.addItems(keys())
+    scalesComboBox = QComboBox()
+    scalesComboBox.addItems(['Chromatic', 'Whole Tone', 'Octatonic'])
+    displayOut = QTextEdit()
+    displayOut.setReadOnly(True)
 
-textArea = QTextEdit()
+    def setScale(scale):
+        key = keysComboBox.currentText()
+        displayOut.setText(' - '.join(notesOfTheScale(key, scale)))
 
-keysComboBox = QComboBox()
-keysComboBox.addItems(keys())
-scalesComboBox = QComboBox()
-scalesComboBox.addItems(['Chromatic', 'Whole Tone', 'Octatonic'])
+    scalesComboBox.currentTextChanged.connect(setScale)
+
+    def setKey(key):
+        scale = scalesComboBox.currentText()
+        displayOut.setText(' - '.join(notesOfTheScale(key, scale)))
+
+    keysComboBox.currentTextChanged.connect(setKey)
+
+    mainLayout = QVBoxLayout()
+
+    layout0 = QHBoxLayout()
+    layout0.addWidget(QLabel('Key: '))
+    layout0.addWidget(keysComboBox)
+    layout0.addWidget(QLabel('Scale: '))
+    layout0.addWidget(scalesComboBox)
+    layout0.setStretch(0, 1)
+    layout0.setStretch(1, 1)
+    layout0.setStretch(2, 1)
+    layout0.setStretch(3, 3)
+
+    runButton = QPushButton("Run")
+    runButton.clicked.connect(lambda checked: print(keys()))
+
+    mainLayout.addLayout(layout0)
+    mainLayout.addWidget(displayOut)
+    # mainLayout.addWidget(runButton)
+
+    # initialize
+    setKey(keysComboBox.currentText())
+
+    w = QWidget()
+    w.setLayout(mainLayout)
+
+    return w
 
 
-def setScale(scale):
-    key = keysComboBox.currentText()
-    textArea.setText(' - '.join(scaleNotes(key, scale)))
+class MainWindow(QMainWindow):
 
-scalesComboBox.currentTextChanged.connect(setScale)
+    def __init__(self, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+
+        self.setWindowTitle('Arm me with harmony.')
+
+        self.setCentralWidget(keyScaleSelectorWidget())
+
+        self.setWindowIcon(QIcon('HH.png'))
 
 
-def setKey(key):
-    scale = scalesComboBox.currentText()
-    textArea.setText(' - '.join(scaleNotes(key, scale)))
+if __name__ == '__main__':
+    app = QApplication([])
 
-keysComboBox.currentTextChanged.connect(setKey)
+    mainWindow = MainWindow()
+    mainWindow.resize(1200, 200)
+    mainWindow.show()
 
-layout0.addWidget(QLabel('Key: '))
-layout0.addWidget(keysComboBox)
-layout0.addWidget(QLabel('Scale: '))
-layout0.addWidget(scalesComboBox)
-layout0.setStretch(0, 1)
-layout0.setStretch(1, 1)
-layout0.setStretch(2, 1)
-layout0.setStretch(3, 3)
+    # stylize
+    app.setStyleSheet(darkgrey_css)
+    font = app.font()
+    font.setPointSize(32)
+    app.setFont(font)
 
-runButton = QPushButton("Run")
-runButton.clicked.connect(lambda checked: print(keys()))
-
-mainLayout.addLayout(layout0)
-mainLayout.addWidget(textArea)
-# mainLayout.addWidget(runButton)
-
-setKey(keysComboBox.currentText())
-
-w = QWidget()
-w.setLayout(mainLayout)
-
-mainWindow = QMainWindow()
-mainWindow.setCentralWidget(w)
-mainWindow.resize(1200, 200)
-mainWindow.show()
-
-app.setStyleSheet(darkgrey_css)
-
-font = app.font()
-font.setPointSize(32)
-app.setFont(font)
-app.setWindowIcon(QIcon('HH.png'))
-app.exec_()
+    # launch
+    app.exec_()
