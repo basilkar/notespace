@@ -566,7 +566,7 @@ icsRecognizer ns n
     -- modes of the harmonic minor scale
     | sig == sigMode 2 sigScalemh = "SCALE: " ++ (show n) ++ " locrian 6; the second mode of " ++ (show $ toNote $ (fromEnum n) - 2 ) ++ " harmonic minor"
     | sig == sigMode 3 sigScalemh = "SCALE: " ++ (show n) ++ " ionian #5; the third mode of " ++ (show $ toNote $ (fromEnum n) - 3 ) ++ " harmonic minor"
-    | sig == sigMode 4 sigScalemh = "SCALE: " ++ (show n) ++ " spanish phrygian, aka romanian, aka ukrainian dorian, aka dorian #4; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " harmonic minor"
+    | sig == sigMode 4 sigScalemh = "SCALE: " ++ (show n) ++ " spanish phrygian, aka romanian minor, aka ukrainian dorian, aka dorian #4, aka nakriz, aka pimenikos minore; the fourth mode of " ++ (show $ toNote $ (fromEnum n) - 4 ) ++ " harmonic minor"
     | sig == sigMode 5 sigScalemh = "SCALE: " ++ (show n) ++ " phrygian dominant, aka phrygian major, aka altered phrygian, aka dominant b2 b6, aka freygish, aka mixolydian b9 b13 (Berklee); the fifth mode of " ++ (show $ toNote $ (fromEnum n) - 7 ) ++ " harmonic minor"
     | sig == sigMode 6 sigScalemh = "SCALE: " ++ (show n) ++ " lydian #2; the sixth mode of " ++ (show $ toNote $ (fromEnum n) - 8 ) ++ " harmonic minor"
     | sig == sigMode 7 sigScalemh = "SCALE: " ++ (show n) ++ " altered diminished; the seventh mode of " ++ (show $ toNote $ (fromEnum n) - 11 ) ++ " harmonic minor"
